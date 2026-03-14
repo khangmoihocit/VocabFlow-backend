@@ -1,22 +1,20 @@
 package com.khangmoihocit.VocabFlow.core.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.FieldDefaults;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+
 @Data
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse <T>{
-    int code;
-    boolean success;
-    String message;
-    T data;
+    private int code;
+    private boolean success;
+    private String message;
+    private T data;
+    private LocalDateTime timestamp;
 }
