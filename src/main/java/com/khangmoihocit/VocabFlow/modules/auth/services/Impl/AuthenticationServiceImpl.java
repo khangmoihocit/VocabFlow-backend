@@ -44,7 +44,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtUtil.generateAccessToken(userDetails.getUsername());
         String refreshToken = jwtUtil.generateRefreshToken(userDetails.getUsername());
 
-        User user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
+        User user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)

@@ -26,12 +26,9 @@ public class AuthenticationController {
     @PostMapping("/login")
     ResponseEntity<?> login(@Valid @RequestBody AuthenticationRequest request){
         AuthenticationResponse authenticationResponse = authenticationService.authentication(request);
-
-        ApiResponse<AuthenticationResponse> response = ApiResponse.<AuthenticationResponse>builder()
-                .message("Đăng nhập tài khoản thành công")
-                .data(authenticationResponse)
-                .build();
-
+        ApiResponse<AuthenticationResponse> response = ApiResponse.success(authenticationResponse, "Đăng nhập thành công!");
         return ResponseEntity.ok(response);
     }
+
+
 }
