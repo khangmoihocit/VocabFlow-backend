@@ -45,10 +45,11 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateAccessToken(String email){
+    public String generateAccessToken(String email) {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("token_type", "ACCESS")
                 .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(Instant.now().plus(ACCESS_TOKEN_VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
@@ -56,10 +57,11 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateRefreshToken(String email){
+    public String generateRefreshToken(String email) {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("token_type", "REFRESH")
                 .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(Instant.now().plus(REFRESH_TOKEN_VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
@@ -76,6 +78,10 @@ public class JwtService {
         Claims claims = extractAllClaims(token);
         LocalDateTime expired = claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         return expired;
+    }
+
+    public String extractTokenType(String token) {
+        return extractAllClaims(token).get("token_type", String.class);
     }
 
     // Lấy theo nhiều claim khác nhau
