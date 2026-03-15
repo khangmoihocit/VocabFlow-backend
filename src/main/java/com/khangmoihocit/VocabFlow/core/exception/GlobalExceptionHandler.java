@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ValidTokenException.class)
-    public ResponseEntity<?> handleAppException(ValidTokenException exception, @NotNull HttpServletRequest request){
+    public ResponseEntity<?> handleValidateTokenException(ValidTokenException exception, @NotNull HttpServletRequest request){
         String message = exception.getMessage();
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", System.currentTimeMillis());
@@ -107,6 +107,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ErrorCode.ACCESS_DENIED));
+    }
+
+    @ExceptionHandler(jakarta.validation.UnexpectedTypeException.class)
+    public ResponseEntity<ApiResponse<?>> handleUnexpectedTypeException(
+            jakarta.validation.UnexpectedTypeException ex,
+            HttpServletRequest request) {
+
+        log.error("Validation configuration error (UnexpectedTypeException): ", ex);
+
+        String message = "Cấu hình validation không hợp lệ: " + ex.getMessage();
+
+        String detail = ex.getMessage();
+        if (detail.contains("Check configuration for")) {
+            String field = detail.substring(detail.lastIndexOf("'") - detail.lastIndexOf("'") + 1).replace("'", "");
+            message = "Validation sai kiểu dữ liệu tại field: " + field + ". Vui lòng kiểm tra annotation.";
+        }
+
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("timestamp", LocalDateTime.now().toString());
+        errorDetails.put("path", request.getRequestURI());
+        errorDetails.put("detail", detail);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)   // 400 là phù hợp nhất
+                .body(ApiResponse.error(
+                        ErrorCode.VALIDATION_ERROR,
+                        errorDetails
+                ));
     }
 
 }

@@ -32,8 +32,8 @@ public class UserSavedWord {
     @JoinColumn(name = "word_id", nullable = false)
     private DictionaryWord dictionaryWord;
 
-    @Column(name = "source_sentence", columnDefinition = "TEXT")
-    private String sourceSentence;
+    @Column(name = "context_sentence", columnDefinition = "TEXT")
+    private String contextSentence;
 
     @Column(name = "source_url", columnDefinition = "TEXT")
     private String sourceUrl;
