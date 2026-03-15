@@ -1,4 +1,4 @@
-package com.khangmoihocit.VocabFlow.modules.auth.dtos.response;
+package com.khangmoihocit.VocabFlow.modules.user.dtos.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,8 +8,6 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String accessToken;
+public class RefreshTokenRequest {
     String refreshToken;
-    UserResponse user;
 }

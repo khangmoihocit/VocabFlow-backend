@@ -1,11 +1,9 @@
-package com.khangmoihocit.VocabFlow.core.utils;
+package com.khangmoihocit.VocabFlow.core.security;
 
 
-import com.khangmoihocit.VocabFlow.modules.auth.repositories.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
@@ -15,8 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,7 +23,7 @@ import java.util.function.Function;
 
 @Component
 @Slf4j
-public class JwtUtil {
+public class JwtService {
     @NonFinal
     @Value("${spring.jwt.signerKey}")
     protected String SIGNER_KEY;
@@ -49,10 +45,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateAccessToken(String email){
+    public String generateAccessToken(String email) {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("token_type", "ACCESS")
                 .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(Instant.now().plus(ACCESS_TOKEN_VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
@@ -60,10 +57,11 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String generateRefreshToken(String email){
+    public String generateRefreshToken(String email) {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("token_type", "REFRESH")
                 .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(Instant.now().plus(REFRESH_TOKEN_VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
@@ -71,6 +69,7 @@ public class JwtUtil {
                 .compact();
     }
 
+    //đã bao gồm kiểm tra token: hạn, chữ ký, issuer,...
     public String extractUsername(String token) {
         return extractClaims(token, Claims::getSubject);
     }
@@ -80,53 +79,10 @@ public class JwtUtil {
         LocalDateTime expired = claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         return expired;
     }
-/*
-    1. token có đúng định dạng không
-    2. chữ ký của token có đúng không
-    3. kiểm tra xem token có hết hạn hay chuưa
-    4.  user_id của token có khớp với userdetail không
-    5. kiểm tra xem token có trong blacklist không
-    6. kiểm tra quyền
-    */
 
-
-    public boolean isTokenFormatValid(String token){
-        try{
-            String[] tokenParts = token.split("\\.");
-            return tokenParts.length == 3;
-        }catch (Exception e){
-            return false;
-        }
+    public String extractTokenType(String token) {
+        return extractAllClaims(token).get("token_type", String.class);
     }
-
-    public boolean isSignatureValid(String token){
-        try{
-            Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public boolean isTokenExpired(String token) {
-        try {
-            final Date expiration = extractClaims(token, Claims::getExpiration);
-            if (expiration == null) {
-                return true;
-            }
-            return expiration.before(new Date());
-        } catch (ExpiredJwtException e) {
-            return true;
-        } catch (Exception e) {
-            return true;
-        }
-    }
-
-    public boolean isIssuerToken(String token){
-        String tokenIssuer = extractClaims(token, Claims::getIssuer);
-        return tokenIssuer.equals(ISSUER);
-    }
-
 
     // Lấy theo nhiều claim khác nhau
     public <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {

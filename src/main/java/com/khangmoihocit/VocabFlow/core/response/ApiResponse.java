@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class ApiResponse<T> {
-
+    private Boolean success;
     private String code;
     private String message;
     private T data;
@@ -19,6 +19,7 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> success(T data){
         ApiResponse<T> res = new ApiResponse<>();
+        res.success = true;
         res.code = "SUCCESS";
         res.message = "Success";
         res.data = data;
@@ -27,14 +28,24 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> success(T data, String message){
         ApiResponse<T> res = new ApiResponse<>();
+        res.success = true;
         res.code = "SUCCESS";
         res.message = message;
         res.data = data;
         return res;
     }
 
+    public static <T> ApiResponse<T> success(String message){
+        ApiResponse<T> res = new ApiResponse<>();
+        res.success = true;
+        res.code = "SUCCESS";
+        res.message = message;
+        return res;
+    }
+
     public static ApiResponse<?> error(ErrorCode errorCode){
         ApiResponse<?> res = new ApiResponse<>();
+        res.success = false;
         res.code = errorCode.getCode();
         res.message = errorCode.getMessage();
         return res;

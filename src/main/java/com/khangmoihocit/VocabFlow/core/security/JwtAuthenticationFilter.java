@@ -1,10 +1,13 @@
 package com.khangmoihocit.VocabFlow.core.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.khangmoihocit.VocabFlow.core.utils.JwtUtil;
-import com.khangmoihocit.VocabFlow.modules.auth.dtos.UserDetailsCustom;
-import com.khangmoihocit.VocabFlow.modules.auth.services.Impl.UserDetailsServiceImpl;
+import com.khangmoihocit.VocabFlow.core.exception.AppException;
+import com.khangmoihocit.VocabFlow.core.exception.OurException;
+import com.khangmoihocit.VocabFlow.core.exception.ValidTokenException;
+import com.khangmoihocit.VocabFlow.modules.user.services.Impl.UserDetailsServiceImpl;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,13 +19,15 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+
+import io.jsonwebtoken.security.SignatureException;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +38,8 @@ import java.util.Map;
 @Slf4j(topic = "JWT AUTHENTICATION  FILTER")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    JwtUtil jwtUtil;
+    JwtService jwtService;
     UserDetailsServiceImpl userDetailService;
-    JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     //trước khi vào controller sẽ vào filter này để check token, check đầu -> security config
     @Override
@@ -54,35 +58,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             final String jwt = authHeader.substring(7);
 
-            if (!jwtUtil.isTokenFormatValid(jwt)) {
+            String tokenType = jwtService.extractTokenType(jwt);
+            if (!"ACCESS".equals(tokenType)) {
                 sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                         "Xác thực không thành công",
-                        "token không đúng định dạng");
+                        "Vui lòng sử dụng Access Token để gọi API, không được dùng Refresh Token!");
                 return;
             }
 
-            if (!jwtUtil.isSignatureValid(jwt)) {
-                sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
-                        "Xác thực không thành công",
-                        "chữ ký token không hợp lệ");
-                return;
-            }
-
-            if (!jwtUtil.isIssuerToken(jwt)) {
-                sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
-                        "Xác thực không thành công",
-                        "token có nguồn gốc không hợp lệ");
-                return;
-            }
-
-            if (jwtUtil.isTokenExpired(jwt)) {
-                sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
-                        "Xác thực không thành công",
-                        "token đã hết hạn");
-                return;
-            }
-
-            final String userEmail = jwtUtil.extractUsername(jwt);
+            final String userEmail = jwtService.extractUsername(jwt);
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             if (userEmail != null && authentication == null) {
@@ -91,14 +75,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                             "Xác thực không thành công",
                             "User token không chính xác");
-                    return;
                 }
 
                 if (!userDetails.isEnabled()) {
                     sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                             "Xác thực không thành công",
                             "Tài khoản của bạn hiện đang bị khóa");
-                    return;
                 }
 
                 UsernamePasswordAuthenticationToken authenticationToken =
@@ -107,17 +89,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
             filterChain.doFilter(request, response);
-        } catch (ServletException | IOException ex) {
-            sendErrorResponse(response, request,
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Network Error!",
-                    ex.getMessage());
+        } catch (ExpiredJwtException ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Token đã hết hạn, vui lòng đăng nhập lại");
+        } catch (SignatureException ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Chữ ký token không hợp lệ hoặc đã bị giả mạo");
+        } catch (MalformedJwtException ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Token không đúng định dạng");
+        } catch (UnsupportedJwtException ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Định dạng Token không được hệ thống hỗ trợ");
+        } catch (IllegalArgumentException ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Token không hợp lệ hoặc bị trống");
+        } catch (Exception ex) {
+            sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Xác thực không thành công", "Đã xảy ra lỗi trong quá trình xác thực token");
         }
     }
 
     //401 Unauthorized	Chưa xác thực hoặc token không hợp lệ / hết hạn
     //403 Forbidden	Đã xác thực thành công, nhưng không có quyền truy cập
-
+    //vì exception jwt filter sẽ không được bắt ở global exception (chỉ bắt exception ở controller)
     private void sendErrorResponse(
             @NotNull HttpServletResponse response,
             @NotNull HttpServletRequest request,
@@ -127,7 +122,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setContentType("application/json;charset=UTF-8");
 
         Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("timestamp", System.currentTimeMillis());
         errorResponse.put("status", statusCode);
         errorResponse.put("error", error);
         errorResponse.put("message", message);
