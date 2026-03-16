@@ -59,6 +59,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                 .pronunciation(dictData.phonetic())
                 .meaningVi("Đang cập nhật!")
                 .explanationEn(dictData.explanationEn())
+                .explanationVi(dictData.explanationVi())
+                .exampleSentence(dictData.exampleSentence())
                 .audioUrl(finalAudioUrl)
                 .build();
 
@@ -90,6 +92,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                             .pronunciation(finalPhonetic)
                             .meaningVi(aiData.meaningVi())
                             .explanationEn(aiData.explanationEn() != null ? aiData.explanationEn() : dictData.explanationEn())
+                            .explanationVi(aiData.explanationVi())
+                            .exampleSentence(aiData.exampleSentence())
                             .audioUrl(finalAudioUrl)
                             .build();
                     return dictionaryWordRepository.save(newWord);
@@ -99,6 +103,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
             savedWord.setMeaningVi(aiData.meaningVi());
             savedWord.setExplanationEn(aiData.explanationEn());
             savedWord.setPronunciation(finalPhonetic);
+            savedWord.setExplanationVi(aiData.explanationVi());
+            savedWord.setExampleSentence(aiData.exampleSentence());
             dictionaryWordRepository.save(savedWord);
         }
 
@@ -111,6 +117,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         String partOfSpeech = null;
         String meaningVi = "Không tìm thấy nghĩa trong từ điển gốc"; // Sẽ bị Gemini ghi đè sau
         String explanationEn = null;
+        String explanationVi = "";
+        String exampleSentence = "";
 
         try {
             var response = restClient.get()
@@ -153,18 +161,19 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         } catch (Exception e) {
             log.warn("Dictionary API bỏ qua từ: {}", word);
         }
-        return new WordData(partOfSpeech, phonetic, meaningVi, explanationEn, audioUrl);
+        return new WordData(partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence, audioUrl);
     }
 
     private WordData fetchFromGeminiApi(String word, String contextSentence) {
         GeminiWordInfo aiInfo = chatClient.prompt()
-                .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn.")
+                .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence.")
                         .param("word", word)
                         .param("context", contextSentence != null ? contextSentence : ""))
                 .call()
                 .entity(GeminiWordInfo.class);
 
-        return new WordData(aiInfo.partOfSpeech(), aiInfo.phonetic(), aiInfo.meaningVi(), aiInfo.explanationEn(), null);
+        return new WordData(aiInfo.partOfSpeech(), aiInfo.phonetic(), aiInfo.meaningVi(), aiInfo.explanationEn(),
+                aiInfo.explanationVi(), aiInfo.exampleSentence(), null);
     }
 
     private String generateGoogleTtsUrl(String text) {
@@ -177,5 +186,6 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         }
     }
 
-    private record WordData(String partOfSpeech, String phonetic, String meaningVi, String explanationEn, String audioUrl) {}
+    private record WordData(String partOfSpeech, String phonetic, String meaningVi,
+                            String explanationEn, String explanationVi, String exampleSentence, String audioUrl) {}
 }

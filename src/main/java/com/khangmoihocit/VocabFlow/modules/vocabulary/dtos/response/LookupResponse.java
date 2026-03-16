@@ -15,5 +15,7 @@ public class LookupResponse {
     String phonetic;
     String meaningVi;
     String explanationEn;
+    String explanationVi;
+    String exampleSentence;
     String audioUrl;
 }

@@ -13,6 +13,8 @@ public class DictionaryWordMapper {
                 .phonetic(word.getPronunciation())
                 .meaningVi(word.getMeaningVi())
                 .explanationEn(word.getExplanationEn())
+                .explanationVi(word.getExplanationVi())
+                .exampleSentence(word.getExampleSentence())
                 .audioUrl(word.getAudioUrl())
                 .build();
     }

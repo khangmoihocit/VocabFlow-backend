@@ -5,5 +5,7 @@ public record GeminiWordInfo(
         String partOfSpeech,
         String phonetic,
         String meaningVi,
-        String explanationEn
+        String explanationEn,
+        String explanationVi,
+        String exampleSentence
 ) {}

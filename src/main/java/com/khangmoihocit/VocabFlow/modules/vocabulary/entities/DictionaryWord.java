@@ -39,6 +39,12 @@ public class DictionaryWord {
     @Column(name = "explanation_en", columnDefinition = "TEXT")
     private String explanationEn;
 
+    @Column(name = "explanation_vi", columnDefinition = "TEXT")
+    private String explanationVi;
+
+    @Column(name = "example_sentence", columnDefinition = "TEXT")
+    private String exampleSentence;
+
     @Column(name = "audio_url", length = 500)
     private String audioUrl;
 
