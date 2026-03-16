@@ -36,13 +36,10 @@ spring:
   ai:
     google:
       genai:
-        api-key: ${GEMINI_API_KEY_1} # Key mặc định cho Spring AI auto-config
+        api-key: ${GEMINI_API_KEY_1}
         chat:
           options:
-            model: gemini-2.5-flash-lite # Model nhanh và rẻ nhất
-
-# Cấu hình riêng cho Key Rotation Pool
-# Đặt tất cả 10 key vào file .env hoặc environment variables
+            model: gemini-2.5-flash-lite
 gemini:
   model: gemini-2.5-flash-lite
   key-cooldown-seconds: 60  # Thời gian (giây) chờ trước khi thử lại key bị lỗi

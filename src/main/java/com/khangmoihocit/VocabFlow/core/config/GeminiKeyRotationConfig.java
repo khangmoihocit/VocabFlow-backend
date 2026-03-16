@@ -17,13 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Tạo bean {@link GeminiChatClientPool} bằng cách khởi tạo một
- * {@link GoogleGenAiChatModel} riêng biệt cho từng API key trong danh sách.
- *
- * Mỗi model được bọc vào một {@link ChatClient}, sau đó tất cả được đưa
- * vào pool để quản lý việc luân chuyển key.
- */
 @Slf4j(topic = "GEMINI KEY ROTATION CONFIG")
 @Configuration
 public class GeminiKeyRotationConfig {
