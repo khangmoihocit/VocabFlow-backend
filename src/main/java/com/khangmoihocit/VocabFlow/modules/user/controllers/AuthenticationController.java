@@ -42,6 +42,7 @@ public class AuthenticationController {
     ResponseEntity<?> refresh(@Valid @RequestBody RefreshTokenRequest request){
         ApiResponse<?> response =
                 ApiResponse.success(authenticationService.refreshToken(request));
+        log.info("đang refresh token");
         return ResponseEntity.ok(response);
     }
 
