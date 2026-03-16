@@ -13,9 +13,11 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j(topic = "VOCABULARY CONTROLLER")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RestController
@@ -33,12 +35,14 @@ public class VocabularyController {
 
     @GetMapping("/lookup/basic")
     public ResponseEntity<ApiResponse<LookupResponse>> lookupBasic(@RequestParam String word) {
+        log.info("tra cứu basic: " + word);
         LookupResponse response = dictionaryWordService.lookupBasic(word);
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu cơ bản thành công"));
     }
 
     @PostMapping("/lookup/ai")
     public ResponseEntity<ApiResponse<LookupResponse>> lookupWithAi(@Valid @RequestBody LookupRequest request) {
+        log.info("tra cứu bằng AI: " + request.getWord());
         LookupResponse response = dictionaryWordService.lookupWithAi(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu bằng AI thành công"));
     }

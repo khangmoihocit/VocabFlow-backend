@@ -1,4 +1,4 @@
-package com.khangmoihocit.VocabFlow.modules.vocabulary.dtos;
+package com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record;
 
 // Record là một tính năng của Java 14+ giúp viết class DTO siêu ngắn
 public record GeminiWordInfo(

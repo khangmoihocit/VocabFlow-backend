@@ -2,22 +2,18 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.khangmoihocit.VocabFlow.core.exception.OurException;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.GeminiWordInfo;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.DictionaryWordMapper;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.DictionaryWordRepository;
+import com.khangmoihocit.VocabFlow.integration.GeminiChatClientPool;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordService;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -33,14 +29,14 @@ import java.util.Optional;
 public class DictionaryWordServiceImpl implements DictionaryWordService {
 
     DictionaryWordRepository dictionaryWordRepository;
-    ChatClient chatClient;
+    GeminiChatClientPool geminiPool;
     RestClient restClient;
     ObjectMapper objectMapper = new ObjectMapper();
     DictionaryWordMapper dictionaryWordMapper = new DictionaryWordMapper();
 
-    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, ChatClient.Builder chatClientBuilder) {
+    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool) {
         this.dictionaryWordRepository = dictionaryWordRepository;
-        this.chatClient = chatClientBuilder.build();
+        this.geminiPool = geminiPool;
         this.restClient = RestClient.create();
     }
 
@@ -124,7 +120,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                 text
         );
 
-        String translatedText = chatClient.prompt().user(u->u.text(prompt)).call().entity(String.class);
+        String translatedText = geminiPool.callWithFallback(
+                client -> client.prompt().user(u -> u.text(prompt)).call().entity(String.class));
 
         if (translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
             translatedText = translatedText.substring(1, translatedText.length() - 1);
@@ -190,12 +187,12 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     }
 
     private WordData fetchFromGeminiApi(String word, String contextSentence) {
-        GeminiWordInfo aiInfo = chatClient.prompt()
+        GeminiWordInfo aiInfo = geminiPool.callWithFallback(client -> client.prompt()
                 .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence.")
                         .param("word", word)
                         .param("context", contextSentence != null ? contextSentence : ""))
                 .call()
-                .entity(GeminiWordInfo.class);
+                .entity(GeminiWordInfo.class));
 
         return new WordData(aiInfo.partOfSpeech(), aiInfo.phonetic(), aiInfo.meaningVi(), aiInfo.explanationEn(),
                 aiInfo.explanationVi(), aiInfo.exampleSentence(), null);
