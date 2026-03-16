@@ -2,8 +2,10 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.controllers;
 
 import com.khangmoihocit.VocabFlow.core.response.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordService;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.UserSavedWordService;
@@ -35,10 +37,17 @@ public class VocabularyController {
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu cơ bản thành công"));
     }
 
-    // API 2: Dùng POST cho truy vấn AI (cần gửi chữ + câu ngữ cảnh dài)
     @PostMapping("/lookup/ai")
     public ResponseEntity<ApiResponse<LookupResponse>> lookupWithAi(@Valid @RequestBody LookupRequest request) {
         LookupResponse response = dictionaryWordService.lookupWithAi(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu bằng AI thành công"));
+    }
+
+    @PostMapping("/translate")
+    public ResponseEntity<?> translateSentence(@Valid @RequestBody TranslateRequest request) {
+        TranslateResponse data = dictionaryWordService.translateText(request.getText());
+
+        ApiResponse<TranslateResponse> response = ApiResponse.success(data, "Dịch đoạn văn thành công");
+        return ResponseEntity.ok(response);
     }
 }

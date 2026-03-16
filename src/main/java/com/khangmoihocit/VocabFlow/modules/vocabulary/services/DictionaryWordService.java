@@ -1,9 +1,12 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.services;
 
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 
 public interface DictionaryWordService {
     LookupResponse lookupBasic(String word);
     LookupResponse lookupWithAi(LookupRequest request);
+    TranslateResponse translateText(String request);
 }

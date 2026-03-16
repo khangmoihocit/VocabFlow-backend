@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khangmoihocit.VocabFlow.core.exception.OurException;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.GeminiWordInfo;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.DictionaryWordMapper;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.DictionaryWordRepository;
@@ -14,6 +16,8 @@ import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -109,6 +113,27 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         }
 
         return dictionaryWordMapper.mapToResponse(savedWord);
+    }
+
+    @Override
+    public TranslateResponse translateText(String text) {
+        String prompt = String.format(
+                "Hãy đóng vai một chuyên gia ngôn ngữ. Dịch đoạn văn tiếng Anh sau sang tiếng Việt " +
+                        "một cách tự nhiên, trôi chảy và sát nghĩa nhất. " +
+                        "Chỉ trả về duy nhất kết quả dịch, tuyệt đối không giải thích hay thêm ký tự thừa:\n\n\"%s\"",
+                text
+        );
+
+        String translatedText = chatClient.prompt().user(u->u.text(prompt)).call().entity(String.class);
+
+        if (translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
+            translatedText = translatedText.substring(1, translatedText.length() - 1);
+        }
+
+        return TranslateResponse.builder()
+                .originalText(text)
+                .translatedText(translatedText)
+                .build();
     }
 
     private WordData fetchFromDictionaryApi(String word) {
