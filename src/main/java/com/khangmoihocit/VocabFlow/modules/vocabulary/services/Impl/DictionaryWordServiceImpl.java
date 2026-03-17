@@ -164,12 +164,18 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         Sort sort = SortUtil.createSort(sortParam);
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
         GenericSpecificationBuilder<DictionaryWord> builder = new GenericSpecificationBuilder<>();
-        builder.with("word", "=", keyword);
+        if(!keyword.isEmpty()) builder.with("word", "=", keyword);
         Specification<DictionaryWord> specification = builder.build();
 
         Page<DictionaryWord> dictionaryWordPage = dictionaryWordRepository.findAll(specification, pageable);
 
-        return null;
+        return PageResponse.<DictionaryWordResponse>builder()
+                .pageNo(dictionaryWordPage.getNumber())
+                .pageSize(dictionaryWordPage.getSize())
+                .totalPages(dictionaryWordPage.getTotalPages())
+                .totalElements(dictionaryWordPage.getNumberOfElements())
+                .data(dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()))
+                .build();
     }
 
     private WordData fetchFromDictionaryApi(String word) {

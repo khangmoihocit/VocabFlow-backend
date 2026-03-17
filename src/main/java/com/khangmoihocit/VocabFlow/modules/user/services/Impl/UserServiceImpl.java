@@ -73,8 +73,8 @@ public class UserServiceImpl implements UserService {
         }
 
         return PageResponse.<UserResponse>builder()
-                .page(userPage.getNumber())
-                .size(userPage.getSize())
+                .pageNo(userPage.getNumber())
+                .pageSize(userPage.getSize())
                 .totalElements(userPage.getTotalElements())
                 .totalPages(userPage.getTotalPages())
                 .data(userResponses)

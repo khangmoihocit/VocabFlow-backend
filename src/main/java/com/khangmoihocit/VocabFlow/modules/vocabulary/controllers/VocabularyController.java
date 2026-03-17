@@ -1,12 +1,15 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.controllers;
 
 import com.khangmoihocit.VocabFlow.core.response.ApiResponse;
+import com.khangmoihocit.VocabFlow.core.response.PageResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWordResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordService;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.UserSavedWordService;
 import jakarta.validation.Valid;
@@ -15,7 +18,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j(topic = "VOCABULARY CONTROLLER")
 @RequiredArgsConstructor
@@ -55,5 +61,15 @@ public class VocabularyController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/find-all")
+    ResponseEntity<?> findAllDictionWord(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo,
+                                         @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+                                         @RequestParam(name = "sort", defaultValue = "word,asc") String sort,
+                                         @RequestParam(name = "keyword", defaultValue = "") String keyword){
+        PageResponse<DictionaryWordResponse> result = dictionaryWordService.findAll(pageNo, pageSize, sort, keyword);
+        ApiResponse<PageResponse<DictionaryWordResponse>> response = ApiResponse.success(result, "tải danh sách từ trong database thành công!");
 
+        return ResponseEntity.ok(response);
+    }
 }
