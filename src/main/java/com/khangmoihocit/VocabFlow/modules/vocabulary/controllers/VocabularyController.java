@@ -34,24 +34,26 @@ public class VocabularyController {
     }
 
     @GetMapping("/lookup/basic")
-    public ResponseEntity<ApiResponse<LookupResponse>> lookupBasic(@RequestParam String word) {
+    ResponseEntity<ApiResponse<LookupResponse>> lookupBasic(@RequestParam String word) {
         log.info("tra cứu basic: " + word);
         LookupResponse response = dictionaryWordService.lookupBasic(word);
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu cơ bản thành công"));
     }
 
     @PostMapping("/lookup/ai")
-    public ResponseEntity<ApiResponse<LookupResponse>> lookupWithAi(@Valid @RequestBody LookupRequest request) {
+    ResponseEntity<ApiResponse<LookupResponse>> lookupWithAi(@Valid @RequestBody LookupRequest request) {
         log.info("tra cứu bằng AI: " + request.getWord());
         LookupResponse response = dictionaryWordService.lookupWithAi(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu bằng AI thành công"));
     }
 
     @PostMapping("/translate")
-    public ResponseEntity<?> translateSentence(@Valid @RequestBody TranslateRequest request) {
+    ResponseEntity<?> translateSentence(@Valid @RequestBody TranslateRequest request) {
         TranslateResponse data = dictionaryWordService.translateText(request.getText());
 
         ApiResponse<TranslateResponse> response = ApiResponse.success(data, "Dịch đoạn văn thành công");
         return ResponseEntity.ok(response);
     }
+
+
 }

@@ -2,8 +2,12 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
+import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
@@ -14,6 +18,11 @@ import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordSer
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -34,11 +43,12 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     GeminiChatClientPool geminiPool;
     RestClient restClient;
     ObjectMapper objectMapper = new ObjectMapper();
-    DictionaryWordMapper dictionaryWordMapper = new DictionaryWordMapper();
+    DictionaryWordMapper dictionaryWordMapper;
 
-    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool) {
+    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper) {
         this.dictionaryWordRepository = dictionaryWordRepository;
         this.geminiPool = geminiPool;
+        this.dictionaryWordMapper = dictionaryWordMapper;
         this.restClient = RestClient.create();
     }
 
@@ -49,7 +59,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         //Kiểm tra Database (Nếu có ai đó từng tra bằng AI rồi thì hưởng sái luôn)
         Optional<DictionaryWord> existingWordOpt = dictionaryWordRepository.findFirstByWord(cleanWord);
         if (existingWordOpt.isPresent()) {
-            return dictionaryWordMapper.mapToResponse(existingWordOpt.get());
+            return dictionaryWordMapper.toLookupResponse(existingWordOpt.get());
         }
 
         WordData dictData = fetchFromDictionaryApi(cleanWord);
@@ -67,7 +77,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                 .build();
 
         newWord = dictionaryWordRepository.save(newWord);
-        return dictionaryWordMapper.mapToResponse(newWord);
+        return dictionaryWordMapper.toLookupResponse(newWord);
     }
 
     @Override
@@ -81,7 +91,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
 
         if (completeWordOpt.isPresent()) {
             log.info("Tra từ bằng AI: Từ '{}' đã có đầy đủ data trong DB.", cleanWord);
-            return dictionaryWordMapper.mapToResponse(completeWordOpt.get());
+            return dictionaryWordMapper.toLookupResponse(completeWordOpt.get());
         }
 
         WordData aiData = fetchFromGeminiApi(cleanWord, request.getContextSentence());
@@ -113,7 +123,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
 
         DictionaryWord savedWord = dictionaryWordRepository.save(wordToSave);
 
-        return dictionaryWordMapper.mapToResponse(savedWord);
+        return dictionaryWordMapper.toLookupResponse(savedWord);
     }
 
     private boolean isDictionaryWordIncomplete(DictionaryWord word) {
@@ -147,6 +157,19 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                 .originalText(text)
                 .translatedText(translatedText)
                 .build();
+    }
+
+    @Override
+    public PageResponse<DictionaryWordResponse> findAll(int pageNo, int pageSize, String sortParam, String keyword) {
+        Sort sort = SortUtil.createSort(sortParam);
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        GenericSpecificationBuilder<DictionaryWord> builder = new GenericSpecificationBuilder<>();
+        builder.with("word", "=", keyword);
+        Specification<DictionaryWord> specification = builder.build();
+
+        Page<DictionaryWord> dictionaryWordPage = dictionaryWordRepository.findAll(specification, pageable);
+
+        return null;
     }
 
     private WordData fetchFromDictionaryApi(String word) {
