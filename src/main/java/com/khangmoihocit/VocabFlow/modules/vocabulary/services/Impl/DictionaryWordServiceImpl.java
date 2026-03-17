@@ -2,24 +2,35 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.khangmoihocit.VocabFlow.core.exception.OurException;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.GeminiWordInfo;
+import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
+import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.DictionaryWordMapper;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.DictionaryWordRepository;
+import com.khangmoihocit.VocabFlow.integration.GeminiChatClientPool;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordService;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j(topic = "DICTIONARY WORD SERVICE")
@@ -29,14 +40,15 @@ import java.util.Optional;
 public class DictionaryWordServiceImpl implements DictionaryWordService {
 
     DictionaryWordRepository dictionaryWordRepository;
-    ChatClient chatClient;
+    GeminiChatClientPool geminiPool;
     RestClient restClient;
     ObjectMapper objectMapper = new ObjectMapper();
-    DictionaryWordMapper dictionaryWordMapper = new DictionaryWordMapper();
+    DictionaryWordMapper dictionaryWordMapper;
 
-    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, ChatClient.Builder chatClientBuilder) {
+    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper) {
         this.dictionaryWordRepository = dictionaryWordRepository;
-        this.chatClient = chatClientBuilder.build();
+        this.geminiPool = geminiPool;
+        this.dictionaryWordMapper = dictionaryWordMapper;
         this.restClient = RestClient.create();
     }
 
@@ -47,7 +59,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         //Kiểm tra Database (Nếu có ai đó từng tra bằng AI rồi thì hưởng sái luôn)
         Optional<DictionaryWord> existingWordOpt = dictionaryWordRepository.findFirstByWord(cleanWord);
         if (existingWordOpt.isPresent()) {
-            return dictionaryWordMapper.mapToResponse(existingWordOpt.get());
+            return dictionaryWordMapper.toLookupResponse(existingWordOpt.get());
         }
 
         WordData dictData = fetchFromDictionaryApi(cleanWord);
@@ -59,50 +71,111 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
                 .pronunciation(dictData.phonetic())
                 .meaningVi("Đang cập nhật!")
                 .explanationEn(dictData.explanationEn())
+                .explanationVi(dictData.explanationVi())
+                .exampleSentence(dictData.exampleSentence())
                 .audioUrl(finalAudioUrl)
                 .build();
 
         newWord = dictionaryWordRepository.save(newWord);
-        return dictionaryWordMapper.mapToResponse(newWord);
+        return dictionaryWordMapper.toLookupResponse(newWord);
     }
 
     @Override
     public LookupResponse lookupWithAi(LookupRequest request) {
         String cleanWord = request.getWord().trim().toLowerCase();
-//        Optional<DictionaryWord> existingWordOpt = dictionaryWordRepository.findFirstByWord(cleanWord);
-//        if (existingWordOpt.isPresent()) {
-//            return dictionaryWordMapper.mapToResponse(existingWordOpt.get());
-//        }
+
+        List<DictionaryWord> existingWords = dictionaryWordRepository.findAllByWord(cleanWord);
+        Optional<DictionaryWord> completeWordOpt = existingWords.stream()
+                .filter(w -> !isDictionaryWordIncomplete(w))
+                .findFirst();
+
+        if (completeWordOpt.isPresent()) {
+            log.info("Tra từ bằng AI: Từ '{}' đã có đầy đủ data trong DB.", cleanWord);
+            return dictionaryWordMapper.toLookupResponse(completeWordOpt.get());
+        }
 
         WordData aiData = fetchFromGeminiApi(cleanWord, request.getContextSentence());
         WordData dictData = fetchFromDictionaryApi(cleanWord);
 
-        String finalAudioUrl = (dictData.audioUrl() != null) ? dictData.audioUrl() : generateGoogleTtsUrl(cleanWord);
-        String finalPhonetic = (dictData.phonetic() != null) ? dictData.phonetic() : aiData.phonetic();
+        String finalAudioUrl = StringUtils.hasText(dictData.audioUrl()) ? dictData.audioUrl() : generateGoogleTtsUrl(cleanWord);
+        String finalPhonetic = StringUtils.hasText(dictData.phonetic()) ? dictData.phonetic() : aiData.phonetic();
+        String finalExplanationEn = StringUtils.hasText(aiData.explanationEn()) ? aiData.explanationEn() : dictData.explanationEn();
 
-        // Tìm trong DB xem cặp (Word + Từ loại mới này) đã có chưa.
-        // Dùng orElseGet để nếu có thì update (nếu cần), nếu chưa thì tạo mới.
-        DictionaryWord savedWord = dictionaryWordRepository.findByWordAndPartOfSpeech(cleanWord, aiData.partOfSpeech())
-                .orElseGet(() -> {
-                    DictionaryWord newWord = DictionaryWord.builder()
-                            .word(cleanWord)
-                            .partOfSpeech(aiData.partOfSpeech())
-                            .pronunciation(finalPhonetic)
-                            .meaningVi(aiData.meaningVi())
-                            .explanationEn(aiData.explanationEn() != null ? aiData.explanationEn() : dictData.explanationEn())
-                            .audioUrl(finalAudioUrl)
-                            .build();
-                    return dictionaryWordRepository.save(newWord);
-                });
+        DictionaryWord wordToSave = existingWords.stream()
+                .filter(w -> w.getPartOfSpeech() != null && w.getPartOfSpeech().equalsIgnoreCase(aiData.partOfSpeech()))
+                .findFirst()
+                .orElse(new DictionaryWord());
 
-        if (savedWord.getMeaningVi().contains("Đang cập nhật!")) {
-            savedWord.setMeaningVi(aiData.meaningVi());
-            savedWord.setExplanationEn(aiData.explanationEn());
-            savedWord.setPronunciation(finalPhonetic);
-            dictionaryWordRepository.save(savedWord);
+        wordToSave.setWord(cleanWord);
+        wordToSave.setPartOfSpeech(aiData.partOfSpeech());
+        wordToSave.setAudioUrl(finalAudioUrl);
+
+        if (wordToSave.getId() == null ||
+                !StringUtils.hasText(wordToSave.getMeaningVi()) ||
+                wordToSave.getMeaningVi().contains("Đang cập nhật!")) {
+
+            wordToSave.setPronunciation(finalPhonetic);
+            wordToSave.setMeaningVi(aiData.meaningVi());
+            wordToSave.setExplanationEn(finalExplanationEn);
+            wordToSave.setExplanationVi(aiData.explanationVi());
+            wordToSave.setExampleSentence(aiData.exampleSentence());
         }
 
-        return dictionaryWordMapper.mapToResponse(savedWord);
+        DictionaryWord savedWord = dictionaryWordRepository.save(wordToSave);
+
+        return dictionaryWordMapper.toLookupResponse(savedWord);
+    }
+
+    private boolean isDictionaryWordIncomplete(DictionaryWord word) {
+        if (word == null) return true;
+
+        return !StringUtils.hasText(word.getPartOfSpeech()) || "unknown".equalsIgnoreCase(word.getPartOfSpeech())
+                || !StringUtils.hasText(word.getPronunciation())
+                || !StringUtils.hasText(word.getMeaningVi()) || word.getMeaningVi().contains("Đang cập nhật!")
+                || !StringUtils.hasText(word.getExplanationEn())
+                || !StringUtils.hasText(word.getExplanationVi())
+                || !StringUtils.hasText(word.getExampleSentence());
+    }
+
+    @Override
+    public TranslateResponse translateText(String text) {
+        String prompt = String.format(
+                "Hãy đóng vai một chuyên gia ngôn ngữ. Dịch đoạn văn tiếng Anh sau sang tiếng Việt " +
+                        "một cách tự nhiên, trôi chảy và sát nghĩa nhất. " +
+                        "Chỉ trả về duy nhất kết quả dịch, tuyệt đối không giải thích hay thêm ký tự thừa:\n\n\"%s\"",
+                text
+        );
+
+        String translatedText = geminiPool.callWithFallback(
+                client -> client.prompt().user(u -> u.text(prompt)).call().entity(String.class));
+
+        if (translatedText.startsWith("\"") && translatedText.endsWith("\"")) {
+            translatedText = translatedText.substring(1, translatedText.length() - 1);
+        }
+
+        return TranslateResponse.builder()
+                .originalText(text)
+                .translatedText(translatedText)
+                .build();
+    }
+
+    @Override
+    public PageResponse<DictionaryWordResponse> findAll(int pageNo, int pageSize, String sortParam, String keyword) {
+        Sort sort = SortUtil.createSort(sortParam);
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+        GenericSpecificationBuilder<DictionaryWord> builder = new GenericSpecificationBuilder<>();
+        if(!keyword.isEmpty()) builder.with("word", "=", keyword);
+        Specification<DictionaryWord> specification = builder.build();
+
+        Page<DictionaryWord> dictionaryWordPage = dictionaryWordRepository.findAll(specification, pageable);
+
+        return PageResponse.<DictionaryWordResponse>builder()
+                .pageNo(dictionaryWordPage.getNumber())
+                .pageSize(dictionaryWordPage.getSize())
+                .totalPages(dictionaryWordPage.getTotalPages())
+                .totalElements(dictionaryWordPage.getNumberOfElements())
+                .data(dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()))
+                .build();
     }
 
     private WordData fetchFromDictionaryApi(String word) {
@@ -111,6 +184,8 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         String partOfSpeech = null;
         String meaningVi = "Không tìm thấy nghĩa trong từ điển gốc"; // Sẽ bị Gemini ghi đè sau
         String explanationEn = null;
+        String explanationVi = "";
+        String exampleSentence = "";
 
         try {
             var response = restClient.get()
@@ -153,18 +228,19 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         } catch (Exception e) {
             log.warn("Dictionary API bỏ qua từ: {}", word);
         }
-        return new WordData(partOfSpeech, phonetic, meaningVi, explanationEn, audioUrl);
+        return new WordData(partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence, audioUrl);
     }
 
     private WordData fetchFromGeminiApi(String word, String contextSentence) {
-        GeminiWordInfo aiInfo = chatClient.prompt()
-                .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn.")
+            GeminiWordInfo aiInfo = geminiPool.callWithFallback(client -> client.prompt()
+                .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence.")
                         .param("word", word)
                         .param("context", contextSentence != null ? contextSentence : ""))
                 .call()
-                .entity(GeminiWordInfo.class);
+                .entity(GeminiWordInfo.class));
 
-        return new WordData(aiInfo.partOfSpeech(), aiInfo.phonetic(), aiInfo.meaningVi(), aiInfo.explanationEn(), null);
+        return new WordData(aiInfo.partOfSpeech(), aiInfo.phonetic(), aiInfo.meaningVi(), aiInfo.explanationEn(),
+                aiInfo.explanationVi(), aiInfo.exampleSentence(), null);
     }
 
     private String generateGoogleTtsUrl(String text) {
@@ -177,5 +253,6 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         }
     }
 
-    private record WordData(String partOfSpeech, String phonetic, String meaningVi, String explanationEn, String audioUrl) {}
+    private record WordData(String partOfSpeech, String phonetic, String meaningVi,
+                            String explanationEn, String explanationVi, String exampleSentence, String audioUrl) {}
 }

@@ -2,20 +2,17 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response;
 
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
-@Getter
+@Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LookupResponse {
-    Long dictionaryWordId;
+public class DictionaryWordResponse {
+    Long id;
     String word;
     String partOfSpeech;
-    String phonetic;
+    String pronunciation;
     String meaningVi;
-//    String explanationEn;
-    String explanationVi;
-    String exampleSentence;
-    String audioUrl;
 }

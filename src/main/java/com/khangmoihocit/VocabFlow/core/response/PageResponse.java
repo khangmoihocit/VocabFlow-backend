@@ -11,8 +11,8 @@ import java.util.List;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PageResponse <T>{
-    int page;
-    int size;
+    int pageNo;
+    int pageSize;
     long totalElements;
     int totalPages;
     List<T> data;
