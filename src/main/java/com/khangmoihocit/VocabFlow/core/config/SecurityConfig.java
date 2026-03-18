@@ -46,7 +46,7 @@ public class SecurityConfig {
     };
 
     String [] PUBLIC_GET_ENDPOINTS = {
-//            "/api/v1/vocabularies/lookup/basic?*"
+            "/api/v1/topics/find-all"
     };
 
     @Bean

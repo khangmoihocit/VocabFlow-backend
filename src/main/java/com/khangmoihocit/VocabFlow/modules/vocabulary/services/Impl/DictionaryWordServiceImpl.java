@@ -10,6 +10,7 @@ import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TopicResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.DictionaryWordMapper;
@@ -208,6 +209,11 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
 
         return pageMapper.toPageResponse(dictionaryWordPage,
                 dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()));
+    }
+
+    @Override
+    public PageResponse<TopicResponse> findWordByTopic(int pageNo, int pageSize, String sort, String topic) {
+        return null;
     }
 
     private WordData fetchFromDictionaryApi(String word) {

@@ -77,4 +77,9 @@ public class VocabularyController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/find-by-topic")
+    ResponseEntity<?> findWordByTopic(){
+        return null;
+    }
 }
