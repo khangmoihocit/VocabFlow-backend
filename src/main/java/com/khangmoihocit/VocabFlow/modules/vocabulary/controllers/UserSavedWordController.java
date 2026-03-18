@@ -1,12 +1,10 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.controllers;
 
-import com.google.protobuf.Api;
 import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.WordSavedFindResponse;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.UserSavedWordRepository;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.UserSavedWordService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -15,6 +13,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j(topic = "USER SAVED WORD CONTROLLER")
 @RequiredArgsConstructor
@@ -48,5 +48,31 @@ public class UserSavedWordController {
         userSavedWordService.deleteBySavedWordId(id);
         ApiResponse<?> response = ApiResponse.success("Xóa từ vựng khỏi sổ tay của bạn thành công!");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/sync-anki")
+    public ResponseEntity<?> syncVocabularyToAnki() {
+        // Kiểm tra kết nối nhanh tới AnkiConnect (Port 8765) để báo lỗi sớm nếu chưa mở Anki
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("127.0.0.1", 8765), 2000);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Lỗi: Anki chưa được mở hoặc AnkiConnect chưa cấu hình đúng port 8765!")
+            );
+        }
+
+        try {
+            int syncedCount = userSavedWordService.syncWithAnki();
+
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("syncedWords", syncedCount),
+                    "Đồng bộ thành công " + syncedCount + " từ vựng sang Anki!"
+            ));
+        } catch (Exception e) {
+            log.error("Sync Anki failed", e);
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Lỗi đồng bộ Anki: " + e.getMessage())
+            );
+        }
     }
 }

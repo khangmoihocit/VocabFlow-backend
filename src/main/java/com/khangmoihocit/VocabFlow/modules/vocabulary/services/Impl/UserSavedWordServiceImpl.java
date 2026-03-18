@@ -1,6 +1,7 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.enums.AnkiStatus;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
@@ -46,6 +47,7 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
     VocabularyGroupRepository vocabularyGroupRepository;
     UserSavedWordMapper userSavedWordMapper;
     PageMapper pageMapper;
+    AnkiConnectService ankiConnectService;
 
     @Override
     @Transactional
@@ -103,5 +105,46 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
         UserSavedWord userSavedWord = userSavedWordRepository.findByIdAndUserId(userSavedWordId, userDetails.getId())
                 .orElseThrow(()->new AppException(ErrorCode.VOCABULARY_NOT_FOUND));
         userSavedWordRepository.delete(userSavedWord);
+    }
+
+    @Transactional
+    @Override
+    public int syncWithAnki() {
+        UserDetailsCustom userDetails = (UserDetailsCustom) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        String rootDeckName = (user.getAnkiDeckName() != null && !user.getAnkiDeckName().isEmpty())
+                ? user.getAnkiDeckName() : "VocabFlow";
+
+        List<UserSavedWord> pendingWords = userSavedWordRepository.findByUserIdAndAnkiStatus(user.getId(), AnkiStatus.PENDING);
+
+        if (pendingWords.isEmpty()) {
+            return 0;
+        }
+
+        int successCount = 0;
+
+        for (UserSavedWord savedWord : pendingWords) {
+            // Tạo cấu trúc Deck Cha::Con (VD: "VocabFlow::Unit 01")
+            String subDeckName = savedWord.getVocabularyGroup().getName();
+            String fullDeckName = rootDeckName + "::" + subDeckName;
+
+            ankiConnectService.createDeck(fullDeckName);
+
+            // Bơm data vào Anki
+            Long ankiNoteId = ankiConnectService.addNote(fullDeckName, savedWord.getDictionaryWord());
+
+            if (ankiNoteId != null) {
+                // Nếu thành công -> Cập nhật trạng thái vào Database
+                savedWord.setAnkiNoteId(ankiNoteId);
+                savedWord.setAnkiStatus(AnkiStatus.SYNCED);
+                userSavedWordRepository.save(savedWord);
+                successCount++;
+            }
+        }
+
+        return successCount;
     }
 }

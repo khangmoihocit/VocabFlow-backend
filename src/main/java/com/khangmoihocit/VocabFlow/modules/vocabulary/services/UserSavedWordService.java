@@ -12,4 +12,6 @@ public interface UserSavedWordService {
             int pageNo, int pageSize, String sort, String keyword, Long vocabularyGroupId);
 
     void deleteBySavedWordId(Long userSavedWordId);
+
+    int syncWithAnki();
 }
