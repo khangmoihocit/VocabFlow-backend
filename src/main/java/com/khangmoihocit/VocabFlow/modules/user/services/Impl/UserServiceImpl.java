@@ -2,11 +2,9 @@ package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
-import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.core.specification.BaseSpecification;
-import com.khangmoihocit.VocabFlow.core.specification.GenericSpecification;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
-import com.khangmoihocit.VocabFlow.core.specification.SearchCriteria;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
 import com.khangmoihocit.VocabFlow.modules.user.entities.User;

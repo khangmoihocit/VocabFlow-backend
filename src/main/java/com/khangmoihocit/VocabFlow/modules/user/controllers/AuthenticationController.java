@@ -1,6 +1,6 @@
 package com.khangmoihocit.VocabFlow.modules.user.controllers;
 
-import com.khangmoihocit.VocabFlow.core.response.ApiResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;

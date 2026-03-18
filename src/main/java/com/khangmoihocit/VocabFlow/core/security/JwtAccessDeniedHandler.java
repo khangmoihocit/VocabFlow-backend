@@ -2,7 +2,7 @@ package com.khangmoihocit.VocabFlow.core.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
-import com.khangmoihocit.VocabFlow.core.response.ApiResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;

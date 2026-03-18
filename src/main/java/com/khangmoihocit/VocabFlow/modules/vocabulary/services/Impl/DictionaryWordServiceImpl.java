@@ -2,7 +2,8 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo;
@@ -44,11 +45,13 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     RestClient restClient;
     ObjectMapper objectMapper = new ObjectMapper();
     DictionaryWordMapper dictionaryWordMapper;
+    PageMapper pageMapper;
 
-    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper) {
+    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper, PageMapper pageMapper) {
         this.dictionaryWordRepository = dictionaryWordRepository;
         this.geminiPool = geminiPool;
         this.dictionaryWordMapper = dictionaryWordMapper;
+        this.pageMapper = pageMapper;
         this.restClient = RestClient.create();
     }
 
@@ -163,19 +166,19 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     public PageResponse<DictionaryWordResponse> findAll(int pageNo, int pageSize, String sortParam, String keyword) {
         Sort sort = SortUtil.createSort(sortParam);
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+
         GenericSpecificationBuilder<DictionaryWord> builder = new GenericSpecificationBuilder<>();
-        if(!keyword.isEmpty()) builder.with("word", "=", keyword);
+
+        if (StringUtils.hasText(keyword)) {
+            builder.with("word", "=", keyword.trim());
+        }
+
         Specification<DictionaryWord> specification = builder.build();
 
         Page<DictionaryWord> dictionaryWordPage = dictionaryWordRepository.findAll(specification, pageable);
 
-        return PageResponse.<DictionaryWordResponse>builder()
-                .pageNo(dictionaryWordPage.getNumber())
-                .pageSize(dictionaryWordPage.getSize())
-                .totalPages(dictionaryWordPage.getTotalPages())
-                .totalElements(dictionaryWordPage.getNumberOfElements())
-                .data(dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()))
-                .build();
+        return pageMapper.toPageResponse(dictionaryWordPage,
+                dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()));
     }
 
     private WordData fetchFromDictionaryApi(String word) {

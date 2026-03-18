@@ -1,6 +1,6 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.services;
 
-import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
