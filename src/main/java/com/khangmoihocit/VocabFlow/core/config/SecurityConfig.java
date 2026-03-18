@@ -1,6 +1,7 @@
 package com.khangmoihocit.VocabFlow.core.config;
 
 import com.khangmoihocit.VocabFlow.core.security.JwtAccessDeniedHandler;
+import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationEntryPoint;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationFilter;
 import com.khangmoihocit.VocabFlow.modules.user.services.Impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class SecurityConfig {
     UserDetailsServiceImpl userDetailsService;
     JwtAuthenticationFilter jwtAuthFilter;
     JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     String[] PUBLIC_POST_ENDPOINTS = {
             "/api/v1/auth/register",
@@ -62,6 +64,7 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
