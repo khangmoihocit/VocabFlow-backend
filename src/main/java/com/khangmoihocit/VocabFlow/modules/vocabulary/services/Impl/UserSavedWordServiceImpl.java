@@ -94,4 +94,14 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
 
         return pageMapper.toPageResponse(savedWordPage, data);
     }
+
+    @Override
+    public void deleteBySavedWordId(Long userSavedWordId) {
+        UserDetailsCustom userDetails = (UserDetailsCustom) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        UserSavedWord userSavedWord = userSavedWordRepository.findByIdAndUserId(userSavedWordId, userDetails.getId())
+                .orElseThrow(()->new AppException(ErrorCode.VOCABULARY_NOT_FOUND));
+        userSavedWordRepository.delete(userSavedWord);
+    }
 }
