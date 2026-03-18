@@ -11,6 +11,8 @@ import lombok.experimental.FieldDefaults;
 public class UserSaveWordRequest {
     @NotNull(message = "từ/cụm từ không được để trống")
     Long dictionaryWordId;
+    @NotNull(message = "bộ từ vựng không được để trống")
+    Long vocabularyGroupId;
     String sourceSentence;
     String sourceUrl;
 }

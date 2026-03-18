@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface VocabularyGroupRepository extends JpaRepository<VocabularyGroup, Long>, JpaSpecificationExecutor<VocabularyGroup> {
 
     Optional<VocabularyGroup> findByIdAndUserId(Long id, UUID userId);
+    Optional<VocabularyGroup> findByUserIdAndName(UUID userId, String name);
 }

@@ -67,12 +67,13 @@ public class VocabularyController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/find-user-saved-word")
+    @GetMapping("/find-user-saved-word/{vocabularyGroupId}")
     ResponseEntity<?> findWordSaveUser(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo,
                                        @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
                                        @RequestParam(name = "sort", defaultValue = "id,asc") String sort,
-                                       @RequestParam(name = "keyword", defaultValue = "") String keyword){
-        PageResponse<WordSavedFindResponse> result = userSavedWordService.findSaveWordByUser(pageNo, pageSize, sort, keyword);
+                                       @RequestParam(name = "keyword", defaultValue = "") String keyword,
+                                       @PathVariable Long vocabularyGroupId){
+        PageResponse<WordSavedFindResponse> result = userSavedWordService.findSaveWordByUser(pageNo, pageSize, sort, keyword, vocabularyGroupId);
         ApiResponse<PageResponse<WordSavedFindResponse>> response = ApiResponse.success(result, "tải danh sách từ trong database thành công!");
 
         return ResponseEntity.ok(response);

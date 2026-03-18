@@ -14,9 +14,11 @@ import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWor
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.WordSavedFindResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.UserSavedWord;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.VocabularyGroup;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.UserSavedWordMapper;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.DictionaryWordRepository;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.UserSavedWordRepository;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.VocabularyGroupRepository;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.UserSavedWordService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
     UserSavedWordRepository userSavedWordRepository;
     UserRepository userRepository;
     DictionaryWordRepository dictionaryWordRepository;
+    VocabularyGroupRepository vocabularyGroupRepository;
     UserSavedWordMapper userSavedWordMapper;
     PageMapper pageMapper;
 
@@ -55,10 +58,13 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
         User user = userRepository.getReferenceById(userDetails.getId());
         DictionaryWord dictionaryWord = dictionaryWordRepository.findById(request.getDictionaryWordId())
                 .orElseThrow(() -> new AppException(ErrorCode.VOCABULARY_NOT_FOUND));
+        VocabularyGroup vocabularyGroup = vocabularyGroupRepository.findById(request.getVocabularyGroupId())
+                .orElseThrow(() -> new AppException(ErrorCode.VOCABULARY_GROUP_NOT_EXISTS));
 
         UserSavedWord userSavedWord = UserSavedWord.builder()
                 .user(user)
                 .dictionaryWord(dictionaryWord)
+                .vocabularyGroup(vocabularyGroup)
                 .contextSentence(request.getSourceSentence())
                 .sourceUrl(request.getSourceUrl())
                 .build();
@@ -67,13 +73,15 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
     }
 
     @Override
-    public PageResponse<WordSavedFindResponse> findSaveWordByUser(int pageNo, int pageSize, String sort, String keyword) {
+    public PageResponse<WordSavedFindResponse> findSaveWordByUser(int pageNo, int pageSize, String sort,
+                                                                  String keyword, Long vocabularyGroupId) {
         UserDetailsCustom userDetails = (UserDetailsCustom) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, SortUtil.createSort(sort));
+
         GenericSpecificationBuilder<UserSavedWord> builder = new GenericSpecificationBuilder<>();
         builder.withJoinById("user", userDetails.getId());
-
+        builder.withJoinById("vocabularyGroup", vocabularyGroupId);
         if (StringUtils.hasText(keyword)) {// kiểm tra null và khoảng trắng
             builder.withJoin("dictionaryWord", "word", "=", keyword.trim());
         }

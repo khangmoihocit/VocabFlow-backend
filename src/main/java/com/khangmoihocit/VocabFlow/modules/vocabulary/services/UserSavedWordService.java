@@ -7,5 +7,5 @@ import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.WordSavedFin
 
 public interface UserSavedWordService {
     UserSavedWordResponse savedWord(UserSaveWordRequest request);
-    PageResponse<WordSavedFindResponse> findSaveWordByUser(int pageNo, int pageSize, String sort, String keyword);
+    PageResponse<WordSavedFindResponse> findSaveWordByUser(int pageNo, int pageSize, String sort, String keyword, Long vocabularyGroupId);
 }

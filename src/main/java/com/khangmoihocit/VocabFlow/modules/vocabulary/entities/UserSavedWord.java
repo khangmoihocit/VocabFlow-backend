@@ -32,6 +32,10 @@ public class UserSavedWord {
     @JoinColumn(name = "word_id", nullable = false)
     private DictionaryWord dictionaryWord;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private VocabularyGroup vocabularyGroup;
+
     @Column(name = "context_sentence", columnDefinition = "TEXT")
     private String contextSentence;
 
