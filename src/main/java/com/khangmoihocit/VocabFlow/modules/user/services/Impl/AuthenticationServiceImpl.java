@@ -18,6 +18,9 @@ import com.khangmoihocit.VocabFlow.modules.user.mappers.UserMapper;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.RefreshTokenRepository;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.VocabularyGroup;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.VocabularyGroupRepository;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.services.VocabularyGroupService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
@@ -54,6 +57,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    VocabularyGroupRepository vocabularyGroupRepository;
 
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
@@ -105,9 +109,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public UserResponse register(UserCreationRequest request) {
         User user = userMapper.toUser(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+
         try {
             user = userRepository.save(user);
-
+            VocabularyGroup vocabularyGroup = VocabularyGroup.builder()
+                    .userId(user.getId())
+                    .name("DEFAULT")
+                    .isDefault(true)
+                    .build();
+            vocabularyGroupRepository.save(vocabularyGroup);
         } catch (DataIntegrityViolationException ex) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }

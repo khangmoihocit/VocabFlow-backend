@@ -11,7 +11,7 @@ public enum ErrorCode {
     INVALID_REQUEST("INVALID_REQUEST", "Yêu cầu không hợp lệ", HttpStatus.BAD_REQUEST),
 
     // ===== AUTH =====
-    UNAUTHENTICATED("UNAUTHENTICATED", "Vui lòng đăng nhập", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED("UNAUTHENTICATED", "Please login!", HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "Sai tài khoản hoặc mật khẩu", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("ACCESS_DENIED", "Bạn không có quyền truy cập", HttpStatus.FORBIDDEN),
 
