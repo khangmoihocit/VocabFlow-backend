@@ -1,15 +1,11 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.controllers;
 
-import com.khangmoihocit.VocabFlow.core.response.ApiResponse;
-import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.TranslateRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWordResponse;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.*;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.DictionaryWordService;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.services.UserSavedWordService;
 import jakarta.validation.Valid;
@@ -21,23 +17,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j(topic = "VOCABULARY CONTROLLER")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RestController
 @RequestMapping("${spring.api.prefix}/vocabularies")
-public class VocabularyController {
-    UserSavedWordService userSavedWordService;
+public class DictionaryWordController {
     DictionaryWordService dictionaryWordService;
-
-    @PostMapping("/save-word-user")
-    ResponseEntity<?> savedWordToUser(@Valid @RequestBody UserSaveWordRequest request){
-        ApiResponse<UserSavedWordResponse> response =
-                ApiResponse.success(userSavedWordService.savedWord(request), "Lưu từ vựng vào sổ tay của bạn thành công!");
-        return ResponseEntity.ok(response);
-    }
 
     @GetMapping("/lookup/basic")
     ResponseEntity<ApiResponse<LookupResponse>> lookupBasic(@RequestParam String word) {
@@ -72,4 +58,6 @@ public class VocabularyController {
 
         return ResponseEntity.ok(response);
     }
+
+
 }

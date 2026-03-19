@@ -2,13 +2,15 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.khangmoihocit.VocabFlow.core.response.PageResponse;
+import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.record.GeminiWordInfo;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.LookupRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.DictionaryWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.LookupResponse;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TopicResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.TranslateResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.DictionaryWord;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.mappers.DictionaryWordMapper;
@@ -31,6 +33,7 @@ import org.springframework.web.client.RestClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j(topic = "DICTIONARY WORD SERVICE")
@@ -44,11 +47,13 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     RestClient restClient;
     ObjectMapper objectMapper = new ObjectMapper();
     DictionaryWordMapper dictionaryWordMapper;
+    PageMapper pageMapper;
 
-    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper) {
+    public DictionaryWordServiceImpl(DictionaryWordRepository dictionaryWordRepository, GeminiChatClientPool geminiPool, DictionaryWordMapper dictionaryWordMapper, PageMapper pageMapper) {
         this.dictionaryWordRepository = dictionaryWordRepository;
         this.geminiPool = geminiPool;
         this.dictionaryWordMapper = dictionaryWordMapper;
+        this.pageMapper = pageMapper;
         this.restClient = RestClient.create();
     }
 
@@ -85,45 +90,73 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
         String cleanWord = request.getWord().trim().toLowerCase();
 
         List<DictionaryWord> existingWords = dictionaryWordRepository.findAllByWord(cleanWord);
+
         Optional<DictionaryWord> completeWordOpt = existingWords.stream()
                 .filter(w -> !isDictionaryWordIncomplete(w))
                 .findFirst();
 
         if (completeWordOpt.isPresent()) {
-            log.info("Tra từ bằng AI: Từ '{}' đã có đầy đủ data trong DB.", cleanWord);
+            log.info("Tra từ bằng AI: Từ '{}' đã có đầy đủ dữ liệu trong DB.", cleanWord);
             return dictionaryWordMapper.toLookupResponse(completeWordOpt.get());
         }
 
         WordData aiData = fetchFromGeminiApi(cleanWord, request.getContextSentence());
         WordData dictData = fetchFromDictionaryApi(cleanWord);
 
-        String finalAudioUrl = StringUtils.hasText(dictData.audioUrl()) ? dictData.audioUrl() : generateGoogleTtsUrl(cleanWord);
-        String finalPhonetic = StringUtils.hasText(dictData.phonetic()) ? dictData.phonetic() : aiData.phonetic();
-        String finalExplanationEn = StringUtils.hasText(aiData.explanationEn()) ? aiData.explanationEn() : dictData.explanationEn();
-
         DictionaryWord wordToSave = existingWords.stream()
-                .filter(w -> w.getPartOfSpeech() != null && w.getPartOfSpeech().equalsIgnoreCase(aiData.partOfSpeech()))
+                .filter(w -> Objects.equals(w.getPartOfSpeech(), aiData.partOfSpeech()))
                 .findFirst()
                 .orElse(new DictionaryWord());
 
-        wordToSave.setWord(cleanWord);
-        wordToSave.setPartOfSpeech(aiData.partOfSpeech());
-        wordToSave.setAudioUrl(finalAudioUrl);
-
-        if (wordToSave.getId() == null ||
-                !StringUtils.hasText(wordToSave.getMeaningVi()) ||
-                wordToSave.getMeaningVi().contains("Đang cập nhật!")) {
-
-            wordToSave.setPronunciation(finalPhonetic);
-            wordToSave.setMeaningVi(aiData.meaningVi());
-            wordToSave.setExplanationEn(finalExplanationEn);
-            wordToSave.setExplanationVi(aiData.explanationVi());
-            wordToSave.setExampleSentence(aiData.exampleSentence());
-        }
+        mergeDataIntoWord(wordToSave, aiData, dictData, cleanWord);
 
         DictionaryWord savedWord = dictionaryWordRepository.save(wordToSave);
 
+        log.info("Tra từ bằng AI: Đã {} từ '{}'.",
+                wordToSave.getId() == null ? "thêm mới" : "cập nhật", cleanWord);
+
         return dictionaryWordMapper.toLookupResponse(savedWord);
+    }
+
+    private void mergeDataIntoWord(DictionaryWord word, WordData aiData, WordData dictData, String cleanWord) {
+        word.setWord(cleanWord);
+        word.setPartOfSpeech(aiData.partOfSpeech());
+
+        // Audio: Ưu tiên Dictionary API → fallback Google TTS
+        if (!StringUtils.hasText(word.getAudioUrl())) {
+            word.setAudioUrl(StringUtils.hasText(dictData.audioUrl())
+                    ? dictData.audioUrl()
+                    : generateGoogleTtsUrl(cleanWord));
+        }
+
+        // Các trường còn lại: chỉ cập nhật nếu hiện tại đang rỗng hoặc là placeholder
+        if (!StringUtils.hasText(word.getPronunciation())) {
+            word.setPronunciation(StringUtils.hasText(dictData.phonetic())
+                    ? dictData.phonetic()
+                    : aiData.phonetic());
+        }
+
+        if (isFieldIncomplete(word.getMeaningVi())) {
+            word.setMeaningVi(aiData.meaningVi());
+        }
+
+        if (isFieldIncomplete(word.getExplanationEn())) {
+            word.setExplanationEn(StringUtils.hasText(aiData.explanationEn())
+                    ? aiData.explanationEn()
+                    : dictData.explanationEn());
+        }
+
+        if (isFieldIncomplete(word.getExplanationVi())) {
+            word.setExplanationVi(aiData.explanationVi());
+        }
+
+        if (isFieldIncomplete(word.getExampleSentence())) {
+            word.setExampleSentence(aiData.exampleSentence());
+        }
+    }
+
+    private boolean isFieldIncomplete(String value) {
+        return !StringUtils.hasText(value) || value.contains("Đang cập nhật!");
     }
 
     private boolean isDictionaryWordIncomplete(DictionaryWord word) {
@@ -163,19 +196,24 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     public PageResponse<DictionaryWordResponse> findAll(int pageNo, int pageSize, String sortParam, String keyword) {
         Sort sort = SortUtil.createSort(sortParam);
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sort);
+
         GenericSpecificationBuilder<DictionaryWord> builder = new GenericSpecificationBuilder<>();
-        if(!keyword.isEmpty()) builder.with("word", "=", keyword);
+
+        if (StringUtils.hasText(keyword)) {
+            builder.with("word", "=", keyword.trim());
+        }
+
         Specification<DictionaryWord> specification = builder.build();
 
         Page<DictionaryWord> dictionaryWordPage = dictionaryWordRepository.findAll(specification, pageable);
 
-        return PageResponse.<DictionaryWordResponse>builder()
-                .pageNo(dictionaryWordPage.getNumber())
-                .pageSize(dictionaryWordPage.getSize())
-                .totalPages(dictionaryWordPage.getTotalPages())
-                .totalElements(dictionaryWordPage.getNumberOfElements())
-                .data(dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()))
-                .build();
+        return pageMapper.toPageResponse(dictionaryWordPage,
+                dictionaryWordMapper.toListDictionWordResponse(dictionaryWordPage.getContent()));
+    }
+
+    @Override
+    public PageResponse<TopicResponse> findWordByTopic(int pageNo, int pageSize, String sort, String topic) {
+        return null;
     }
 
     private WordData fetchFromDictionaryApi(String word) {
@@ -232,7 +270,7 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     }
 
     private WordData fetchFromGeminiApi(String word, String contextSentence) {
-            GeminiWordInfo aiInfo = geminiPool.callWithFallback(client -> client.prompt()
+        GeminiWordInfo aiInfo = geminiPool.callWithFallback(client -> client.prompt()
                 .user(u -> u.text("Bạn là chuyên gia ngôn ngữ. Phân tích '{word}' trong câu: '{context}'. Trả về JSON với các key: partOfSpeech, phonetic, meaningVi, explanationEn, explanationVi, exampleSentence.")
                         .param("word", word)
                         .param("context", contextSentence != null ? contextSentence : ""))
@@ -254,5 +292,6 @@ public class DictionaryWordServiceImpl implements DictionaryWordService {
     }
 
     private record WordData(String partOfSpeech, String phonetic, String meaningVi,
-                            String explanationEn, String explanationVi, String exampleSentence, String audioUrl) {}
+                            String explanationEn, String explanationVi, String exampleSentence, String audioUrl) {
+    }
 }

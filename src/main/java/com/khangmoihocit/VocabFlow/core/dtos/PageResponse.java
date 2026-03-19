@@ -1,4 +1,4 @@
-package com.khangmoihocit.VocabFlow.core.response;
+package com.khangmoihocit.VocabFlow.core.dtos;
 
 import lombok.AccessLevel;
 import lombok.Builder;

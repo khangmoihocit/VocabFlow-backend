@@ -6,11 +6,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LookupRequest {
-    @NotBlank(message = "từ/cụm từ tìm kiếm không được để trống")
-    String word;
-    String contextSentence;
+public class VocabularyGroupRequest {
+    @NotBlank(message = "tên bộ từ vựng không được để trống")
+    String name;
 }

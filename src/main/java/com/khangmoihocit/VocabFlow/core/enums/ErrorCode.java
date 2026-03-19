@@ -11,7 +11,7 @@ public enum ErrorCode {
     INVALID_REQUEST("INVALID_REQUEST", "Yêu cầu không hợp lệ", HttpStatus.BAD_REQUEST),
 
     // ===== AUTH =====
-    UNAUTHENTICATED("UNAUTHENTICATED", "Vui lòng đăng nhập", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED("UNAUTHENTICATED", "Please login!", HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "Sai tài khoản hoặc mật khẩu", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("ACCESS_DENIED", "Bạn không có quyền truy cập", HttpStatus.FORBIDDEN),
 
@@ -36,6 +36,8 @@ public enum ErrorCode {
     // ===== VOCABULARY =====
     VOCABULARY_NOT_FOUND("VOCABULARY_NOT_FOUND", "Từ vựng không tồn tại", HttpStatus.NOT_FOUND),
     VOCABULARY_ALREADY_EXISTS("VOCABULARY_ALREADY_EXISTS", "Từ vựng đã tồn tại", HttpStatus.CONFLICT),
+    VOCABULARY_GROUP_NOT_EXISTS("VOCABULARY_GROUP_NOT_EXISTS", "Bộ từ vựng không tồn tại", HttpStatus.NOT_FOUND),
+    VOCABULARY_DEFAULT_NOT_INIT("VOCABULARY_DEFAULT_NOT_INIT", "Bộ từ vựng mặc định không tồn tại", HttpStatus.NOT_FOUND),
 
     // ===== SENTENCE PRACTICE =====
     SENTENCE_NOT_FOUND("SENTENCE_NOT_FOUND", "Câu không tồn tại", HttpStatus.NOT_FOUND),

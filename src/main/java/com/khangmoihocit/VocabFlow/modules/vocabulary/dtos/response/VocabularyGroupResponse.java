@@ -2,23 +2,20 @@ package com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response;
 
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Data
+@Getter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class DictionaryWordResponse {
+public class VocabularyGroupResponse {
     Long id;
-    String word;
-    String partOfSpeech;
-    String pronunciation;
-    String meaningVi;
-    String explanationEn;
-    String explanationVi;
-    String exampleSentence;
-    String audioUrl;
+    UUID userId;
+    String name;
+    boolean isDefault;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }

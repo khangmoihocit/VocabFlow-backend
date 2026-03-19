@@ -1,10 +1,9 @@
-package com.khangmoihocit.VocabFlow.core.response;
+package com.khangmoihocit.VocabFlow.core.dtos;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.springframework.http.HttpStatus;
+
 import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

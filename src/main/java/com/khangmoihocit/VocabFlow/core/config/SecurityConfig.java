@@ -1,6 +1,7 @@
 package com.khangmoihocit.VocabFlow.core.config;
 
 import com.khangmoihocit.VocabFlow.core.security.JwtAccessDeniedHandler;
+import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationEntryPoint;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationFilter;
 import com.khangmoihocit.VocabFlow.modules.user.services.Impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -37,6 +39,7 @@ public class SecurityConfig {
     UserDetailsServiceImpl userDetailsService;
     JwtAuthenticationFilter jwtAuthFilter;
     JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     String[] PUBLIC_POST_ENDPOINTS = {
             "/api/v1/auth/register",
@@ -46,7 +49,7 @@ public class SecurityConfig {
     };
 
     String [] PUBLIC_GET_ENDPOINTS = {
-//            "/api/v1/vocabularies/lookup/basic?*"
+            "/api/v1/topics/find-all"
     };
 
     @Bean
@@ -62,6 +65,7 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -102,4 +106,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+    
 }
