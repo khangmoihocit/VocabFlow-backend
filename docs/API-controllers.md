@@ -1,231 +1,328 @@
-# API Documentation - Controllers
+# API Documentation (JSON-focused)
 
-This document describes the public API endpoints implemented by the six controllers requested: `AuthenticationController`, `UserController`, `TopicController`, `DictionaryWordController`, `UserSavedWordController`, and `VocabularyGroupController`.
-
-Notes:
-- Base path is `${spring.api.prefix}` (literal) as used in the code; replace with the real prefix (commonly `/api/v1`) when calling the API.
-- All responses are wrapped in `ApiResponse<T>` unless otherwise noted.
-- Authentication: endpoints that require a Bearer token are noted. Security rules are defined in `core.config.SecurityConfig`.
-
----
-
-## AuthenticationController
-Base: `${spring.api.prefix}/auth`
-
-### POST /login
-- Auth required: No (public)
-- Purpose: Authenticate user and return access + refresh tokens and user info.
-- Request body (JSON):
-  - AuthenticationRequest
-    - email: string (required) - `@NotBlank`
-    - password: string (required) - `@NotBlank`, `@Size(min = 8)`
-- Response: `ApiResponse<AuthenticationResponse>`
-  - AuthenticationResponse
-    - accessToken: string
-    - refreshToken: string
-    - user: UserResponse
-      - id: UUID
-      - email: string
-      - fullName: string
-      - role: string
-      - ankiDeckName: string
-      - isActive: boolean
-      - createdAt: LocalDateTime
-      - updatedAt: LocalDateTime
-
-### POST /register
-- Auth required: No (public)
-- Purpose: Create a new user account.
-- Request body (JSON):
-  - UserCreationRequest
-    - email: string (required) - `@NotBlank`
-    - password: string (required) - `@NotBlank`, `@Size(min = 8)`
-    - fullName: string (required) - `@NotEmpty`
-- Response: `ApiResponse<UserResponse>` (see `UserResponse` above)
-
-### POST /refresh-token
-- Auth required: No (public)
-- Purpose: Exchange a refresh token for a new access token (service-specific return).
-- Request body (JSON):
-  - RefreshTokenRequest
-    - refreshToken: string (required) - `@NotBlank`
-- Response: `ApiResponse<?>` (service returns refreshed token object)
-
-### POST /logout
-- Auth required: No (public)
-- Purpose: Invalidate a refresh token / logout user.
-- Request body (JSON): RefreshTokenRequest
-- Response: `ApiResponse<?>` (message)
+Base URL: `${spring.api.prefix}` (e.g. `/api/v1`). Responses use `ApiResponse<T>`:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "...",
+  "data": { /* payload */ },
+  "errors": null,
+  "timestamp": "2024-01-01T00:00:00"
+}
+```
+Auth: Public endpoints are POST `/auth/login`, `/auth/register`, `/auth/refresh-token`, `/auth/logout`, and GET `/topics/find-all`. Others need `Authorization: Bearer <token>`.
 
 ---
 
-## UserController
-Base: `${spring.api.prefix}/user`
+## AuthenticationController (`${spring.api.prefix}/auth`)
 
-### GET /
-- Auth required: Yes (Bearer) and Role: ADMIN (`@PreAuthorize("hasRole('ADMIN')")`)
-- Purpose: Get paginated list of users.
-- Query params: controller reads request parameter map; expected common params:
-  - pageNo (default 1)
-  - pageSize (default 20)
-  - sort (e.g. `field,asc`)
-  - keyword
-- Response: `ApiResponse<PageResponse<UserResponse>>`
-  - PageResponse fields: `pageNo`, `pageSize`, `totalElements`, `totalPages`, `data: UserResponse[]`
+### POST /login (public)
+Request:
+```json
+{
+  "email": "user@example.com",
+  "password": "P@ssw0rd"
+}
+```
+Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Đăng nhập thành công!",
+  "data": {
+    "accessToken": "<jwt>",
+    "refreshToken": "<refresh-jwt>",
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "fullName": "User Name",
+      "role": "USER",
+      "ankiDeckName": "Default",
+      "isActive": true,
+      "createdAt": "2024-01-01T00:00:00",
+      "updatedAt": "2024-01-01T00:00:00"
+    }
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
 
----
+### POST /register (public)
+Request:
+```json
+{
+  "email": "new@example.com",
+  "password": "P@ssw0rd",
+  "fullName": "New User"
+}
+```
+Response: `ApiResponse<UserResponse>`
 
-## TopicController
-Base: `${spring.api.prefix}/topics`
+### POST /refresh-token (public)
+Request:
+```json
+{ "refreshToken": "<refresh-jwt>" }
+```
+Response: `ApiResponse<?>` (service returns refreshed tokens)
 
-### GET /find-all
-- Auth required: No (public GET)
-- Purpose: Get paginated list of topics.
-- Query params:
-  - pageNo (default 1)
-  - pageSize (default 20)
-  - sort (default `id,asc`)
-  - keyword (default empty)
-- Response: `ApiResponse<PageResponse<TopicResponse>>`
-  - TopicResponse fields:
-    - id: Long
-    - name: string
-    - description: string
-    - createdAt: LocalDateTime
-
----
-
-## DictionaryWordController
-Base: `${spring.api.prefix}/vocabularies`
-
-### GET /lookup/basic?word={word}
-- Auth required: Yes (Bearer)
-- Purpose: Quickly lookup a word from DB/dictionary by query param.
-- Query params:
-  - word (required)
-- Response: `ApiResponse<LookupResponse>`
-  - LookupResponse fields:
-    - dictionaryWordId: Long
-    - word: string
-    - partOfSpeech: string
-    - phonetic: string
-    - meaningVi: string
-    - explanationVi: string
-    - exampleSentence: string
-    - audioUrl: string
-
-### POST /lookup/ai
-- Auth required: Yes (Bearer)
-- Purpose: Lookup using AI (richer explanation/context).
-- Request body: LookupRequest
-  - word: string (required) - `@NotBlank`
-  - contextSentence: string (optional)
-- Response: `ApiResponse<LookupResponse>` (same structure as above)
-
-### POST /translate
-- Auth required: Yes (Bearer)
-- Purpose: Translate a text snippet.
-- Request body: TranslateRequest
-  - text: string (required) - `@NotBlank`
-- Response: `ApiResponse<TranslateResponse>`
-  - TranslateResponse fields:
-    - originalText: string
-    - translatedText: string
-
-### GET /find-all
-- Auth required: Yes and Role: ADMIN (`@PreAuthorize("hasRole('ADMIN')")`)
-- Purpose: Admin-only listing of dictionary words.
-- Query params: pageNo, pageSize, sort, keyword
-- Response: `ApiResponse<PageResponse<DictionaryWordResponse>>`
-  - DictionaryWordResponse fields:
-    - id: Long
-    - word: string
-    - partOfSpeech: string
-    - pronunciation: string
-    - meaningVi: string
+### POST /logout (public)
+Request:
+```json
+{ "refreshToken": "<refresh-jwt>" }
+```
+Response: `ApiResponse<?>` with logout message
 
 ---
 
-## UserSavedWordController
-Base: `${spring.api.prefix}/user-saved-words`
-
-### POST /
-- Auth required: Yes (Bearer)
-- Purpose: Save a dictionary word to the current user's vocabulary group.
-- Request body: UserSaveWordRequest
-  - dictionaryWordId: Long (required) - `@NotNull`
-  - vocabularyGroupId: Long (required) - `@NotNull`
-  - sourceSentence: string (optional)
-  - sourceUrl: string (optional)
-- Response: `ApiResponse<UserSavedWordResponse>`
-  - UserSavedWordResponse fields: `userSavedWordId: Long`
-
-### GET /find-all/{vocabularyGroupId}
-- Auth required: Yes
-- Purpose: Get paginated saved words for the current user in a vocabulary group.
-- Path params: vocabularyGroupId: Long
-- Query params: pageNo,pageSize,sort,keyword
-- Response: `ApiResponse<PageResponse<WordSavedFindResponse>>`
-  - WordSavedFindResponse fields:
-    - id: Long
-    - userId: UUID
-    - dictionaryWordResponse: DictionaryWordResponse
-    - sourceUrl: string
-    - ankiStatus: string
-    - ankiNoteId: Long
-
-### DELETE /{id}
-- Auth required: Yes
-- Purpose: Delete saved word by id.
-- Path params: id: Long
-- Response: `ApiResponse<?>` (message)
-
-### POST /sync-anki
-- Auth required: Yes
-- Purpose: Sync saved words to local Anki via AnkiConnect (local TCP 127.0.0.1:8765)
-- Request: none
-- Response:
-  - On success: `ApiResponse<Map<String,Integer>>` containing `syncedWords` count
-  - On Anki connection error: HTTP 400 with `ApiResponse.error` message explaining AnkiConnect not reachable
+## UserController (`${spring.api.prefix}/user`)
+### GET /  (Bearer + ADMIN)
+Query params: `pageNo`, `pageSize`, `sort`, `keyword`
+Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Lấy danh sách thành công",
+  "data": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "totalElements": 100,
+    "totalPages": 5,
+    "data": [ { "id": "uuid", "email": "...", "fullName": "...", "role": "USER", "ankiDeckName": "Default", "isActive": true, "createdAt": "...", "updatedAt": "..." } ]
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
 
 ---
 
-## VocabularyGroupController
-Base: `${spring.api.prefix}/vocabulary-groups`
-
-### GET /find-all
-- Auth required: Yes
-- Purpose: List vocabulary groups for the user (paginated)
-- Query params: pageNo,pageSize,sort,keyword
-- Response: `ApiResponse<PageResponse<VocabularyGroupResponse>>`
-  - VocabularyGroupResponse fields:
-    - id: Long
-    - userId: UUID
-    - name: string
-    - isDefault: boolean
-    - createdAt: LocalDateTime
-    - updatedAt: LocalDateTime
-
-### POST /
-- Auth required: Yes
-- Purpose: Create vocabulary group
-- Request body: VocabularyGroupRequest
-  - name: string (required) - `@NotBlank`
-- Response: `ApiResponse<VocabularyGroupResponse>`
-
-### PUT /{id}
-- Auth required: Yes
-- Purpose: Update vocabulary group
-- Path param: id: Long
-- Request body: VocabularyGroupRequest
-- Response: `ApiResponse<VocabularyGroupResponse>`
-
-### DELETE /{id}
-- Auth required: Yes
-- Purpose: Delete vocabulary group
-- Path param: id: Long
-- Response: `ApiResponse<?>` (message)
+## TopicController (`${spring.api.prefix}/topics`)
+### GET /find-all (public)
+Query: `pageNo`, `pageSize`, `sort`, `keyword`
+Response (topics list):
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "tải danh sách topic trong database thành công!",
+  "data": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "totalElements": 10,
+    "totalPages": 1,
+    "data": [ { "id": 1, "name": "Travel", "description": "...", "createdAt": "..." } ]
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
 
 ---
 
-If you want example request/response JSONs added for each endpoint, I can append them (small examples only).
+## DictionaryWordController (`${spring.api.prefix}/vocabularies`)
+
+### GET /lookup/basic (Bearer)
+Query: `word`
+Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Tra cứu cơ bản thành công",
+  "data": {
+    "dictionaryWordId": 12,
+    "word": "apple",
+    "partOfSpeech": "noun",
+    "phonetic": "ˈæp.əl",
+    "meaningVi": "quả táo",
+    "explanationVi": "...",
+    "exampleSentence": "I ate an apple.",
+    "audioUrl": "https://..."
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+### POST /lookup/ai (Bearer)
+Request:
+```json
+{
+  "word": "run",
+  "contextSentence": "He can run very fast."
+}
+```
+Response: same structure as lookup/basic
+
+### POST /translate (Bearer)
+Request:
+```json
+{ "text": "Hello world" }
+```
+Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Dịch đoạn văn thành công",
+  "data": { "originalText": "Hello world", "translatedText": "Xin chào thế giới" },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+### GET /find-all (Bearer + ADMIN)
+Response (paged dictionary words):
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "tải danh sách từ trong database thành công!",
+  "data": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "totalElements": 200,
+    "totalPages": 10,
+    "data": [ { "id": 1, "word": "apple", "partOfSpeech": "noun", "pronunciation": "ˈæp.əl", "meaningVi": "quả táo" } ]
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+---
+
+## UserSavedWordController (`${spring.api.prefix}/user-saved-words`)
+
+### POST / (Bearer)
+Request:
+```json
+{
+  "dictionaryWordId": 12,
+  "vocabularyGroupId": 3,
+  "sourceSentence": "I ate an apple.",
+  "sourceUrl": "https://news.com/article"
+}
+```
+Response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Lưu từ vựng vào sổ tay của bạn thành công!",
+  "data": { "userSavedWordId": 99 },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+### GET /find-all/{vocabularyGroupId} (Bearer)
+Response (paged saved words):
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "tải danh sách từ trong database thành công!",
+  "data": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "totalElements": 5,
+    "totalPages": 1,
+    "data": [
+      {
+        "id": 99,
+        "userId": "uuid",
+        "dictionaryWordResponse": {
+          "id": 12,
+          "word": "apple",
+          "partOfSpeech": "noun",
+          "pronunciation": "ˈæp.əl",
+          "meaningVi": "quả táo"
+        },
+        "sourceUrl": "https://news.com/article",
+        "ankiStatus": "PENDING",
+        "ankiNoteId": 123456
+      }
+    ]
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+### DELETE /{id} (Bearer)
+Response:
+```json
+{ "success": true, "code": "SUCCESS", "message": "Xóa từ vựng khỏi sổ tay của bạn thành công!", "data": null, "errors": null, "timestamp": "..." }
+```
+
+### POST /sync-anki (Bearer)
+Success response:
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "Đồng bộ thành công 3 từ vựng sang Anki!",
+  "data": { "syncedWords": 3 },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+On Anki connection error:
+```json
+{ "success": false, "code": "ERROR", "message": "Lỗi: Anki chưa được mở hoặc AnkiConnect chưa cấu hình đúng port 8765!" }
+```
+
+---
+
+## VocabularyGroupController (`${spring.api.prefix}/vocabulary-groups`)
+
+### GET /find-all (Bearer)
+Response (paged groups):
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "tải danh sách nhóm từ vựng bạn tạo thành công!",
+  "data": {
+    "pageNo": 1,
+    "pageSize": 20,
+    "totalElements": 3,
+    "totalPages": 1,
+    "data": [ { "id": 3, "userId": "uuid", "name": "TOEIC", "isDefault": false, "createdAt": "...", "updatedAt": "..." } ]
+  },
+  "errors": null,
+  "timestamp": "..."
+}
+```
+
+### POST / (Bearer)
+Request:
+```json
+{ "name": "TOEIC" }
+```
+Response: `ApiResponse<VocabularyGroupResponse>`
+
+### PUT /{id} (Bearer)
+Request:
+```json
+{ "name": "IELTS" }
+```
+Response: `ApiResponse<VocabularyGroupResponse>`
+
+### DELETE /{id} (Bearer)
+Response:
+```json
+{ "success": true, "code": "SUCCESS", "message": "xóa bộ từ vựng thành công", "data": null, "errors": null, "timestamp": "..." }
+```
+
+---
+
+Request validation hints:
+- `@NotBlank`: non-empty text
+- `@NotNull`: required field
+- `@Size(min=8)`: password length >= 8

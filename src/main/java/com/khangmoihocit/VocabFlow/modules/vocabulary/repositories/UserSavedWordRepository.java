@@ -15,7 +15,7 @@ import java.util.UUID;
 @Repository
 public interface UserSavedWordRepository extends JpaRepository<UserSavedWord, Long>, JpaSpecificationExecutor<UserSavedWord> {
 
-    boolean existsByUserIdAndDictionaryWordId(UUID userId, Long wordId);
+    boolean existsByUserIdAndDictionaryWordIdAndVocabularyGroupId(UUID userId, Long wordId, Long vocabularyGroupId);
 
     Optional<UserSavedWord> findByIdAndUserId(Long id, UUID userId);
 

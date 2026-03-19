@@ -3,6 +3,7 @@ package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
 import com.khangmoihocit.VocabFlow.core.specification.BaseSpecification;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
@@ -32,6 +33,7 @@ import java.util.Map;
 public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
+    PageMapper pageMapper;
 
     @Override
     public List<UserResponse> getAll() {
@@ -57,12 +59,6 @@ public class UserServiceImpl implements UserService {
             userResponses = userMapper.toListUserResponse(userPage.getContent());
         }
 
-        return PageResponse.<UserResponse>builder()
-                .pageNo(userPage.getNumber())
-                .pageSize(userPage.getSize())
-                .totalElements(userPage.getTotalElements())
-                .totalPages(userPage.getTotalPages())
-                .data(userResponses)
-                .build();
+        return pageMapper.toPageResponse(userPage, userResponses);
     }
 }

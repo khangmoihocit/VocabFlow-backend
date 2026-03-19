@@ -53,7 +53,7 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
     @Transactional
     public UserSavedWordResponse savedWord(UserSaveWordRequest request) {
         UserDetailsCustom userDetails = (UserDetailsCustom) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (userSavedWordRepository.existsByUserIdAndDictionaryWordId(userDetails.getId(), request.getDictionaryWordId())) {
+        if (userSavedWordRepository.existsByUserIdAndDictionaryWordIdAndVocabularyGroupId(userDetails.getId(), request.getDictionaryWordId(), request.getVocabularyGroupId())) {
             throw new AppException(ErrorCode.VOCABULARY_ALREADY_EXISTS);
         }
         //getReferenceById: tạo đối tượng giả chỉ lấy id
