@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,31 +41,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PageResponse<UserResponse> getUsers(Map<String, String[]> parameters) {
-        int page = parameters.containsKey("page") ? Integer.parseInt(parameters.get("page")[0]) : 1;
-        int size = parameters.containsKey("size") ? Integer.parseInt(parameters.get("size")[0]) : 20;
-        String sortParam = parameters.containsKey("sort") ? parameters.get("sort")[0] : null;
-        Sort sort = SortUtil.createSort(sortParam);
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+    public PageResponse<UserResponse> getUsers(int pageNo, int pageSize, String sort, String keyword) {
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, SortUtil.createSort(sort));
 
-        String keyword = parameters.containsKey("keyword") ? parameters.get("keyword")[0] : null;
-        String role = parameters.containsKey("role") ? parameters.get("role")[0] : null;
-        Boolean isActive = parameters.containsKey("isActive") ? Boolean.valueOf(parameters.get("isActive")[0]) : null;
+//        String role = parameters.containsKey("role") ? parameters.get("role")[0] : null;
+//        Boolean isActive = parameters.containsKey("isActive") ? Boolean.valueOf(parameters.get("isActive")[0]) : null;
 
         GenericSpecificationBuilder<User> builder = new GenericSpecificationBuilder<>();
-        if (role != null && !role.isEmpty()) builder.with("role", "=", role);
-        if (isActive != null) builder.with("isActive", "=", isActive);
+        if (StringUtils.hasText(keyword)) builder.with("email", ":", keyword);
+        Specification<User> specification = builder.build();
 
-        Specification<User> finalSpec = Specification.where(builder.build());
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            Specification<User> searchSpec = BaseSpecification
-                    .keywordSpec(keyword, "email", "fullName");
-
-            // WHERE (role = ? AND is_active = ?) AND (email LIKE ? OR full_name LIKE ?)
-            finalSpec = finalSpec.and(searchSpec);
-        }
-
-        Page<User> userPage = userRepository.findAll(finalSpec, pageable);
+        Page<User> userPage = userRepository.findAll(specification, pageable);
         List<UserResponse> userResponses = new ArrayList<>();
         if(!userPage.getContent().isEmpty()){
             userResponses = userMapper.toListUserResponse(userPage.getContent());

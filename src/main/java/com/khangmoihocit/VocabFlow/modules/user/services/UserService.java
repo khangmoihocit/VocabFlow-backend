@@ -8,5 +8,5 @@ import java.util.Map;
 
 public interface UserService {
     List<UserResponse> getAll();
-    PageResponse<UserResponse> getUsers(Map<String, String[]> parameters);
+    PageResponse<UserResponse> getUsers(int pageNo, int pageSize, String sort, String keyword);
 }
