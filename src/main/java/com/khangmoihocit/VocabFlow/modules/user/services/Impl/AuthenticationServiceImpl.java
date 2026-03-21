@@ -76,13 +76,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .user(UserResponse.builder()
-                        .id(user.getId())
-                        .fullName(user.getFullName())
-                        .role(user.getRole())
-                        .email(user.getEmail())
-                        .isActive(user.getIsActive())
-                        .build())
+                .user(userMapper.toUserResponse(user))
                 .build();
     }
 

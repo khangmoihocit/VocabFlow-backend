@@ -18,6 +18,7 @@ public class UserResponse {
     String role;
     String ankiDeckName;
     Boolean isActive;
+    String avatarUrl;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }
