@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -43,6 +44,9 @@ public class User {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     Boolean isActive = true;
+
+    @Column(name = "avatar_url")
+    String avatarUrl;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp

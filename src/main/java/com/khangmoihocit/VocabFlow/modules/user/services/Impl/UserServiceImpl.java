@@ -3,7 +3,10 @@ package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.exception.OurException;
 import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
+import com.khangmoihocit.VocabFlow.core.security.UserDetailsCustom;
+import com.khangmoihocit.VocabFlow.core.services.CloudinaryService;
 import com.khangmoihocit.VocabFlow.core.specification.BaseSpecification;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
@@ -20,8 +23,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +39,7 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PageMapper pageMapper;
+    CloudinaryService cloudinaryService;
 
     @Override
     public List<UserResponse> getAll() {
@@ -60,5 +66,24 @@ public class UserServiceImpl implements UserService {
         }
 
         return pageMapper.toPageResponse(userPage, userResponses);
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        try {
+            UserDetailsCustom userDetailsCustom = (UserDetailsCustom) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+            User user = userRepository.findById(userDetailsCustom.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+
+            String avatarUrl = cloudinaryService.uploadAvatar(file);
+
+            user.setAvatarUrl(avatarUrl);
+            userRepository.save(user);
+
+            return avatarUrl;
+        } catch (Exception e) {
+            throw new OurException("Lỗi khi upload avatar");
+        }
     }
 }
