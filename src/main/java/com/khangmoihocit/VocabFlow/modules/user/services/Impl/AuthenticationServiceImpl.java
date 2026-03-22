@@ -61,6 +61,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+
+        if ("GOOGLE".equals(user.getProvider())) {
+            throw new AppException(ErrorCode.ACCOUNT_ALREADY_GOOGLE);
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
@@ -70,7 +77,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(userDetails.getUsername());
         String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername());
 
-        User user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         saveRefreshTokenToDB(refreshToken, user);
 
         return AuthenticationResponse.builder()

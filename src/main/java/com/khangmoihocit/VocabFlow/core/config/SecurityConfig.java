@@ -3,6 +3,7 @@ package com.khangmoihocit.VocabFlow.core.config;
 import com.khangmoihocit.VocabFlow.core.security.JwtAccessDeniedHandler;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationEntryPoint;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationFilter;
+import com.khangmoihocit.VocabFlow.core.security.OAuth2SuccessHandler;
 import com.khangmoihocit.VocabFlow.modules.user.services.Impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,18 +42,17 @@ public class SecurityConfig {
     JwtAuthenticationFilter jwtAuthFilter;
     JwtAccessDeniedHandler jwtAccessDeniedHandler;
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    OAuth2SuccessHandler oAuth2SuccessHandler;
 
     String[] PUBLIC_POST_ENDPOINTS = {
-            "/api/v1/auth/register",
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh-token",
-            "/api/v1/auth/logout",
-            "/api/v1/auth/login/oauth2/code/google"
+            "/api/v1/auth/**",
+            "/oauth2/**"
     };
 
     String [] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/topics/find-all",
-            "/api/v1/auth/login/oauth2/code/google"
+            "/api/v1/auth/**",
+            "/oauth2/**"
     };
 
     @Bean
@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler))
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))

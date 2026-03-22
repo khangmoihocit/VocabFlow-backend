@@ -14,6 +14,7 @@ public enum ErrorCode {
     UNAUTHENTICATED("UNAUTHENTICATED", "Please login!", HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "Sai tài khoản hoặc mật khẩu", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("ACCESS_DENIED", "Bạn không có quyền truy cập", HttpStatus.FORBIDDEN),
+    ACCOUNT_ALREADY_GOOGLE("ACCOUNT_ALREADY_GOOGLE", "Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập lại.", HttpStatus.BAD_REQUEST),
 
     // ===== TOKEN =====
     INVALID_TOKEN("INVALID_TOKEN", "Token không hợp lệ", HttpStatus.UNAUTHORIZED),

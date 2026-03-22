@@ -48,6 +48,12 @@ public class User {
     @Column(name = "avatar_url")
     String avatarUrl;
 
+    @Column(name = "provider")
+    private String provider = "LOCAL";
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     LocalDateTime createdAt;
