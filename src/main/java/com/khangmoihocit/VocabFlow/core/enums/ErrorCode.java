@@ -32,7 +32,7 @@ public enum ErrorCode {
     ACCOUNT_DISABLED("ACCOUNT_DISABLED", "Tài khoản đã bị vô hiệu hóa", HttpStatus.FORBIDDEN),
     EMAIL_ALREADY_EXISTS("EMAIL_ALREADY_EXISTS", "Email đã tồn tại", HttpStatus.CONFLICT),
     USER_IS_EMPTY("USER_IS_EMPTY", "Danh sách người dùng trống", HttpStatus.NOT_FOUND),
-
+    ACCOUNT_DELETED_BUT_CAN_RECOVER("ACCOUNT_DELETED_BUT_CAN_RECOVER", "Email này đã từng được sử dụng và bị xóa. Chúng tôi đã gửi link khôi phục đến email của bạn.", HttpStatus.BAD_REQUEST),
     // ===== VALIDATION =====
     VALIDATION_ERROR("VALIDATION_ERROR", "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
 

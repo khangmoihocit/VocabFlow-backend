@@ -111,8 +111,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteAccount() {
-        userRepository.deleteById(UserDetailUtil.get().getId());
+        int deleted = userRepository.deleteSoft(UserDetailUtil.get().getId());
+        if(deleted == 0){
+            throw new OurException("Có lỗi trong quá trình xóa tài khoản.");
+        }
     }
 
     @Override

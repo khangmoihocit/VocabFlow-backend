@@ -56,6 +56,10 @@ public class User {
     @Column(name = "provider_id")
     String providerId;
 
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    Boolean isDeleted = false;
+
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     LocalDateTime createdAt;

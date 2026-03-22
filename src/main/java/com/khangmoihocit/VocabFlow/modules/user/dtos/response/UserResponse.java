@@ -21,6 +21,7 @@ public class UserResponse {
     String avatarUrl;
     String provider;
     String providerId;
+    Boolean isDeleted;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

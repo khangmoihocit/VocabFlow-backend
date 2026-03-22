@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<@NonNull User, @NonNull UUID>, JpaSpecificationExecutor<User> {
     Optional<User> findByEmail(String email);
 
+    //@Modifying dùng khi insert, update, delete
     @Modifying
     @Query("update User u set u.isActive = case when u.isActive = true then false else true end where u.id = :uuid")
     int toggleIsActive(UUID uuid);
@@ -23,4 +24,8 @@ public interface UserRepository extends JpaRepository<@NonNull User, @NonNull UU
     @Modifying
     @Query("update User u set u.avatarUrl = :avatarUrl where u.id = :uuid")
     int updateAvatar(String avatarUrl, UUID uuid);
+
+    @Modifying
+    @Query("update User u set u.isDeleted = true where u.id = :uuid")
+    int deleteSoft(UUID uuid);
 }
