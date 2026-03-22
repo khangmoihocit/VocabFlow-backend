@@ -1,5 +1,6 @@
 package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
@@ -39,11 +40,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.Option;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j(topic = "AUTHENTICATION SERVICE")
 @Service
@@ -61,6 +60,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_REGISTER));
+
+        if(user.getIsDeleted()){
+            throw new AppException(ErrorCode.EMAIL_NOT_REGISTER);
+        }
+
+        if ("GOOGLE".equals(user.getProvider())) {
+            throw new AppException(ErrorCode.ACCOUNT_ALREADY_GOOGLE);
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
@@ -70,19 +80,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(userDetails.getUsername());
         String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername());
 
-        User user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         saveRefreshTokenToDB(refreshToken, user);
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .user(UserResponse.builder()
-                        .id(user.getId())
-                        .fullName(user.getFullName())
-                        .role(user.getRole())
-                        .email(user.getEmail())
-                        .isActive(user.getIsActive())
-                        .build())
+                .user(userMapper.toUserResponse(user))
                 .build();
     }
 
@@ -106,21 +109,32 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    @Transactional
     public UserResponse register(UserCreationRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            if (Boolean.TRUE.equals(userOptional.get().getIsDeleted())) {
+                throw new AppException(ErrorCode.ACCOUNT_DELETED_BUT_CAN_RECOVER);
+            } else {
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            }
+        }
+
         User user = userMapper.toUser(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setIsDeleted(false);
+        user = userRepository.save(user);
 
-        try {
-            user = userRepository.save(user);
-            VocabularyGroup vocabularyGroup = VocabularyGroup.builder()
-                    .userId(user.getId())
-                    .name("DEFAULT")
-                    .isDefault(true)
-                    .build();
-            vocabularyGroupRepository.save(vocabularyGroup);
-        } catch (DataIntegrityViolationException ex) {
-            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
+        VocabularyGroup defaultGroup = VocabularyGroup.builder()
+                .userId(user.getId())
+                .name("DEFAULT")
+                .isDefault(true)
+                .build();
+        vocabularyGroupRepository.save(defaultGroup);
+
         return userMapper.toUserResponse(user);
     }
 

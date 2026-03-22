@@ -1,5 +1,6 @@
 package com.khangmoihocit.VocabFlow.modules.user.dtos.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -13,6 +14,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreationRequest {
     @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không đúng định dạng")
     String email;
 
     @NotBlank(message = "Mật khẩu không được để trống")
@@ -20,5 +22,6 @@ public class UserCreationRequest {
     String password;
 
     @NotEmpty(message = "Tên không được để trống")
+    @Size(min = 2, max = 20, message = "Tên phải từ 2-20 ký tự")
     String fullName;
 }
