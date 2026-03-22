@@ -62,7 +62,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_REGISTER));
 
         if ("GOOGLE".equals(user.getProvider())) {
             throw new AppException(ErrorCode.ACCOUNT_ALREADY_GOOGLE);

@@ -75,12 +75,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                             "Xác thực không thành công",
                             "User token không chính xác");
+                    return;
                 }
 
                 if (!userDetails.isEnabled()) {
                     sendErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                             "Xác thực không thành công",
                             "Tài khoản của bạn hiện đang bị khóa");
+                    return;
                 }
 
                 UsernamePasswordAuthenticationToken authenticationToken =

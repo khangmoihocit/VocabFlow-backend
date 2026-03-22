@@ -19,6 +19,8 @@ public class UserResponse {
     String ankiDeckName;
     Boolean isActive;
     String avatarUrl;
+    String provider;
+    String providerId;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

@@ -5,9 +5,11 @@ import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.core.exception.OurException;
 import com.khangmoihocit.VocabFlow.core.services.CloudinaryService;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserUpdateRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
 import com.khangmoihocit.VocabFlow.modules.user.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,13 +37,11 @@ public class UserController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng chọn một file ảnh!"));
         }
 
-        //Kiểm tra định dạng file (Chỉ cho phép JPG, PNG)
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Định dạng không hợp lệ! Chỉ chấp nhận ảnh JPG hoặc PNG."));
         }
 
-        //Kiểm tra kích thước file (Tối đa 5MB)
         if (file.getSize() > MAX_FILE_SIZE) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB."));
         }
@@ -52,6 +52,14 @@ public class UserController {
         }catch (OurException ex){
             return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
         }
+    }
+
+    @GetMapping("/me")
+    ResponseEntity<?> me(){
+        UserResponse userResponse = userService.getMyInfo();
+
+        ApiResponse<UserResponse> response =  ApiResponse.success(userResponse, "Tải thông tin của bạn thành công!");
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -66,4 +74,24 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping
+    ResponseEntity<?> updateInfo(@Valid @RequestBody UserUpdateRequest request){
+        ApiResponse<UserResponse> response = ApiResponse.success(userService.updateBasicInfo(request), "Cập nhật thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/toggle-active-account/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    ResponseEntity<?> toggleActiveAccount(@PathVariable(name = "id") String id){
+        userService.toggleActiveAccount(id);
+        return ResponseEntity.ok(ApiResponse.success("cập nhật trạng thái tài khoản thành công"));
+    }
+
+    @DeleteMapping
+    ResponseEntity<?> deleteById(){
+        userService.deleteAccount();
+        return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công"));
+    }
+
 }

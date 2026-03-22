@@ -82,6 +82,7 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
+//        authProvider.setPreAuthenticationChecks(user -> {}); // lambda rỗng, không check gì
         return authProvider;
     }
 

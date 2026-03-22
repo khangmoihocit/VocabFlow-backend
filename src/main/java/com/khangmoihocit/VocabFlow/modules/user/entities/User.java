@@ -39,7 +39,8 @@ public class User {
     String role = RoleEnum.USER.toString();
 
     @Column(name = "anki_deck_name")
-    String ankiDeckName;
+    @Builder.Default
+    String ankiDeckName = "VocabFlow";
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
@@ -49,10 +50,11 @@ public class User {
     String avatarUrl;
 
     @Column(name = "provider")
-    private String provider = "LOCAL";
+    @Builder.Default
+    String provider = "LOCAL";
 
     @Column(name = "provider_id")
-    private String providerId;
+    String providerId;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
