@@ -4,6 +4,7 @@ import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.VerifyRegisterRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.AuthenticationResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
@@ -50,6 +51,13 @@ public class AuthenticationController {
     ResponseEntity<?> logout(@Valid @RequestBody RefreshTokenRequest request){
         authenticationService.logout(request);
         ApiResponse<?> response = ApiResponse.success("Đăng xuất thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-register")
+    ResponseEntity<?> verifyRegister(@Valid @RequestBody VerifyRegisterRequest request){
+        AuthenticationResponse result = authenticationService.verifyRegister(request.getEmail(), request.getOtpCode());
+        ApiResponse<?> response = ApiResponse.success(result, "Xác thực email thành công!");
         return ResponseEntity.ok(response);
     }
 

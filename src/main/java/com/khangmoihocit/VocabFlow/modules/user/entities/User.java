@@ -60,6 +60,10 @@ public class User {
     @Builder.Default
     Boolean isDeleted = false;
 
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default
+    Boolean isVerified = false;
+
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     LocalDateTime createdAt;

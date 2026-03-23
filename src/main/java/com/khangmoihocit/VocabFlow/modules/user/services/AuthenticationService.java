@@ -13,7 +13,12 @@ import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 
 public interface AuthenticationService {
     AuthenticationResponse authentication(AuthenticationRequest request);
+
     UserResponse register(UserCreationRequest request);
+
     RefreshTokenResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
+
     void logout(RefreshTokenRequest request);
+
+    AuthenticationResponse verifyRegister(String email, String otp);
 }

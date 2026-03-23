@@ -7,15 +7,19 @@ import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.core.exception.ValidTokenException;
 import com.khangmoihocit.VocabFlow.core.security.JwtService;
 import com.khangmoihocit.VocabFlow.core.security.UserDetailsCustom;
+import com.khangmoihocit.VocabFlow.core.services.EmailService;
+import com.khangmoihocit.VocabFlow.core.utils.UserDetailUtil;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.AuthenticationResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.RefreshTokenResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
+import com.khangmoihocit.VocabFlow.modules.user.entities.OtpToken;
 import com.khangmoihocit.VocabFlow.modules.user.entities.RefreshToken;
 import com.khangmoihocit.VocabFlow.modules.user.entities.User;
 import com.khangmoihocit.VocabFlow.modules.user.mappers.UserMapper;
+import com.khangmoihocit.VocabFlow.modules.user.repositories.OtpTokenRepository;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.RefreshTokenRepository;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
@@ -34,6 +38,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.text.html.Option;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j(topic = "AUTHENTICATION SERVICE")
@@ -57,13 +63,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     VocabularyGroupRepository vocabularyGroupRepository;
+    OtpTokenRepository otpTokenRepository;
+    EmailService emailService;
 
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_REGISTER));
 
-        if(user.getIsDeleted()){
+        if(!user.getIsVerified()){
+            throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFY);
+        }
+
+        if (user.getIsDeleted()) {
             throw new AppException(ErrorCode.EMAIL_NOT_REGISTER);
         }
 
@@ -126,7 +138,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = userMapper.toUser(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setIsDeleted(false);
+        user.setIsVerified(false);
         user = userRepository.save(user);
+
+        OtpToken otpToken = OtpToken.builder()
+                .email(request.getEmail())
+                .otpCode(generateOtp())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .type("REGISTER")
+                .build();
+        otpToken = otpTokenRepository.save(otpToken);
+        emailService.sendOtpEmail(otpToken.getEmail(), otpToken.getOtpCode(), otpToken.getType());
 
         VocabularyGroup defaultGroup = VocabularyGroup.builder()
                 .userId(user.getId())
@@ -136,6 +158,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         vocabularyGroupRepository.save(defaultGroup);
 
         return userMapper.toUserResponse(user);
+    }
+
+    private String generateOtp() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000); // Sinh số từ 100000 đến 999999
+        return String.valueOf(otp);
     }
 
     @Override
@@ -186,6 +214,47 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     public void logout(RefreshTokenRequest request) {
         refreshTokenRepository.deleteByToken(request.getRefreshToken());
+    }
+
+    @Override
+    @Transactional
+    public AuthenticationResponse verifyRegister(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getIsVerified()) {
+            throw new AppException(ErrorCode.USER_ALREADY_VERIFIED);
+        }
+
+        OtpToken otpToken = otpTokenRepository.findByEmailAndOtpCodeAndType(email, otp, "REGISTER")
+                .orElseThrow(() -> new AppException(ErrorCode.OTP_VERIFY_ERROR));
+
+        if (otpToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            otpTokenRepository.delete(otpToken);
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        user.setIsVerified(true);
+        userRepository.save(user);
+        otpTokenRepository.delete(otpToken);
+
+        UserDetailsCustom userDetails = new UserDetailsCustom(user.getId(), user.getEmail(),
+                user.getPasswordHash(), user.getIsActive(),
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String accessToken = jwtService.generateAccessToken(userDetails.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername());
+
+        saveRefreshTokenToDB(refreshToken, user);
+
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userMapper.toUserResponse(user))
+                .build();
     }
 
 
