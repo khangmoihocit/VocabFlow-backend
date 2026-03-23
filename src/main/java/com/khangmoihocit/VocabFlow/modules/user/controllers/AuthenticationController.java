@@ -1,10 +1,7 @@
 package com.khangmoihocit.VocabFlow.modules.user.controllers;
 
 import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
-import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
-import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
-import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;
-import com.khangmoihocit.VocabFlow.modules.user.dtos.request.VerifyRegisterRequest;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.*;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.AuthenticationResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
@@ -58,6 +55,20 @@ public class AuthenticationController {
     ResponseEntity<?> verifyRegister(@Valid @RequestBody VerifyRegisterRequest request){
         AuthenticationResponse result = authenticationService.verifyRegister(request.getEmail(), request.getOtpCode());
         ApiResponse<?> response = ApiResponse.success(result, "Xác thực email thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authenticationService.forgetPassword(request.getEmail());
+        ApiResponse<?> response = ApiResponse.success("Mã OTP khôi phục mật khẩu đã được gửi đến email của bạn!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authenticationService.resetPassword(request.getEmail(), request.getOtpCode(), request.getNewPassword());
+        ApiResponse<?> response = ApiResponse.success("Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.");
         return ResponseEntity.ok(response);
     }
 

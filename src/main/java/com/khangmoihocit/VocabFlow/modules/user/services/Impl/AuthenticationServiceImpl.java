@@ -1,14 +1,12 @@
 package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 
-import ch.qos.logback.classic.spi.IThrowableProxy;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
+import com.khangmoihocit.VocabFlow.core.exception.OurException;
 import com.khangmoihocit.VocabFlow.core.exception.ValidTokenException;
 import com.khangmoihocit.VocabFlow.core.security.JwtService;
 import com.khangmoihocit.VocabFlow.core.security.UserDetailsCustom;
 import com.khangmoihocit.VocabFlow.core.services.EmailService;
-import com.khangmoihocit.VocabFlow.core.utils.UserDetailUtil;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;
@@ -25,7 +23,6 @@ import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.VocabularyGroup;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.VocabularyGroupRepository;
-import com.khangmoihocit.VocabFlow.modules.vocabulary.services.VocabularyGroupService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
@@ -34,19 +31,15 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -66,22 +59,58 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     OtpTokenRepository otpTokenRepository;
     EmailService emailService;
 
+    private void saveRefreshTokenToDB(String refreshToken, User user) {
+        List<RefreshToken> refreshTokenList = refreshTokenRepository.getAllByUserId(user.getId());
+        if (refreshTokenList.size() > 1) {
+            RefreshToken refreshTokenSave = refreshTokenList.get(0);
+            refreshTokenSave.setToken(refreshToken);
+            refreshTokenSave.setExpiryDate(jwtService.extractExpired(refreshToken));
+            refreshTokenRepository.save(refreshTokenSave);
+        } else {
+            refreshTokenRepository.save(RefreshToken.builder()
+                    .token(refreshToken)
+                    .user(user)
+                    .expiryDate(jwtService.extractExpired(refreshToken))
+                    .build());
+        }
+    }
+
+    private void sendOtpAndSaveDB(String email, String type){
+        OtpToken otpToken = OtpToken.builder()
+                .email(email)
+                .otpCode(generateOtp())
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .type(type)
+                .build();
+        otpToken = otpTokenRepository.save(otpToken);
+        emailService.sendOtpEmail(otpToken.getEmail(), otpToken.getOtpCode(), otpToken.getType());
+    }
+
+    private String generateOtp() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000);
+        return String.valueOf(otp);
+    }
+
+    private OtpToken checkAndValidateOtp(String email, String otp, String type) {
+        OtpToken otpToken = otpTokenRepository.findByEmailAndOtpCodeAndType(email, otp, type)
+                .orElseThrow(() -> new AppException(ErrorCode.OTP_VERIFY_ERROR));
+
+        if (otpToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            otpTokenRepository.delete(otpToken);
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+        return otpToken;
+    }
+
     @Override
     public AuthenticationResponse authentication(AuthenticationRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_REGISTER));
 
-        if(!user.getIsVerified()){
-            throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFY);
-        }
-
-        if (user.getIsDeleted()) {
-            throw new AppException(ErrorCode.EMAIL_NOT_REGISTER);
-        }
-
-        if ("GOOGLE".equals(user.getProvider())) {
-            throw new AppException(ErrorCode.ACCOUNT_ALREADY_GOOGLE);
-        }
+        if(!user.getIsVerified()) throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFY);
+        if (user.getIsDeleted()) throw new AppException(ErrorCode.EMAIL_NOT_REGISTER);
+        if ("GOOGLE".equals(user.getProvider())) throw new AppException(ErrorCode.ACCOUNT_ALREADY_GOOGLE);
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -101,30 +130,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .build();
     }
 
-    private void saveRefreshTokenToDB(String refreshToken, User user) {
-        List<RefreshToken> refreshTokenList = refreshTokenRepository.getAllByUserId(user.getId());
-
-        //nếu user này có 2 token rồi, sẽ cập nhật lại token cũ nhất và đăng xuất khỏi thiết bị đó
-        if (refreshTokenList.size() > 1) {
-            RefreshToken refreshTokenSave = refreshTokenList.get(0);
-            refreshTokenSave.setToken(refreshToken);
-            refreshTokenSave.setExpiryDate(jwtService.extractExpired(refreshToken));
-            refreshTokenRepository.save(refreshTokenSave);
-        } else {
-            //user mới đăng nhập 1 tb sẽ tạo mới refreshtoken
-            refreshTokenRepository.save(RefreshToken.builder()
-                    .token(refreshToken)
-                    .user(user)
-                    .expiryDate(jwtService.extractExpired(refreshToken))
-                    .build());
-        }
-    }
-
     @Override
     @Transactional
     public UserResponse register(UserCreationRequest request) {
         String email = request.getEmail().trim().toLowerCase();
-
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isPresent()) {
@@ -141,14 +150,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setIsVerified(false);
         user = userRepository.save(user);
 
-        OtpToken otpToken = OtpToken.builder()
-                .email(request.getEmail())
-                .otpCode(generateOtp())
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-                .type("REGISTER")
-                .build();
-        otpToken = otpTokenRepository.save(otpToken);
-        emailService.sendOtpEmail(otpToken.getEmail(), otpToken.getOtpCode(), otpToken.getType());
+        sendOtpAndSaveDB(request.getEmail(), "REGISTER");
 
         VocabularyGroup defaultGroup = VocabularyGroup.builder()
                 .userId(user.getId())
@@ -160,10 +162,35 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return userMapper.toUserResponse(user);
     }
 
-    private String generateOtp() {
-        Random random = new Random();
-        int otp = 100000 + random.nextInt(900000); // Sinh số từ 100000 đến 999999
-        return String.valueOf(otp);
+    @Override
+    @Transactional
+    public AuthenticationResponse verifyRegister(String email, String otp) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (user.getIsVerified()) throw new AppException(ErrorCode.USER_ALREADY_VERIFIED);
+
+        OtpToken otpToken = checkAndValidateOtp(email, otp, "REGISTER");
+
+        user.setIsVerified(true);
+        userRepository.save(user);
+        otpTokenRepository.delete(otpToken);
+
+        UserDetailsCustom userDetails = new UserDetailsCustom(user.getId(), user.getEmail(),
+                user.getPasswordHash(), user.getIsActive(),
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String accessToken = jwtService.generateAccessToken(userDetails.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername());
+
+        saveRefreshTokenToDB(refreshToken, user);
+
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userMapper.toUserResponse(user))
+                .build();
     }
 
     @Override
@@ -217,45 +244,51 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    @Transactional
-    public AuthenticationResponse verifyRegister(String email, String otp) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        if (user.getIsVerified()) {
-            throw new AppException(ErrorCode.USER_ALREADY_VERIFIED);
-        }
-
-        OtpToken otpToken = otpTokenRepository.findByEmailAndOtpCodeAndType(email, otp, "REGISTER")
-                .orElseThrow(() -> new AppException(ErrorCode.OTP_VERIFY_ERROR));
-
-        if (otpToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            otpTokenRepository.delete(otpToken);
-            throw new AppException(ErrorCode.OTP_EXPIRED);
-        }
-
-        user.setIsVerified(true);
-        userRepository.save(user);
-        otpTokenRepository.delete(otpToken);
-
-        UserDetailsCustom userDetails = new UserDetailsCustom(user.getId(), user.getEmail(),
-                user.getPasswordHash(), user.getIsActive(),
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String accessToken = jwtService.generateAccessToken(userDetails.getUsername());
-        String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername());
-
-        saveRefreshTokenToDB(refreshToken, user);
-
-        return AuthenticationResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .user(userMapper.toUserResponse(user))
-                .build();
+    public void forgetPassword(String email) {
+        userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        sendOtpAndSaveDB(email, "FORGOT_PASSWORD");
     }
 
+    @Override
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        OtpToken otpToken = checkAndValidateOtp(email, otp, "FORGOT_PASSWORD");
+        userRepository.updatePassword(passwordEncoder.encode(newPassword), email);
+        otpTokenRepository.delete(otpToken);
+    }
 
+    @Override
+    public void requestChangePasswordOtp() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if ("GOOGLE".equals(user.getProvider())) {
+            throw new OurException("Tài khoản Google không thể đổi mật khẩu!");
+        }
+
+        sendOtpAndSaveDB(email, "CHANGE_PASSWORD");
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String oldPassword, String newPassword, String otp) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if ("GOOGLE".equals(user.getProvider())) {
+            throw new OurException("Tài khoản Google không thể đổi mật khẩu!");
+        }
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+            throw new OurException("Mật khẩu cũ không chính xác!");
+        }
+
+        // Xác thực OTP
+        OtpToken otpToken = checkAndValidateOtp(email, otp, "CHANGE_PASSWORD");
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        otpTokenRepository.delete(otpToken);
+    }
 }
