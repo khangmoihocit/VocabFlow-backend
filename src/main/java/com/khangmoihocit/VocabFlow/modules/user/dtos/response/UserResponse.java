@@ -22,6 +22,7 @@ public class UserResponse {
     String provider;
     String providerId;
     Boolean isDeleted;
+    Boolean isVerified;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

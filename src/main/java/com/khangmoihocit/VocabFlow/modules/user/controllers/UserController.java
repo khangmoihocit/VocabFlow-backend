@@ -5,8 +5,10 @@ import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.core.exception.OurException;
 import com.khangmoihocit.VocabFlow.core.services.CloudinaryService;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.ChangePasswordRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserUpdateRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
+import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
 import com.khangmoihocit.VocabFlow.modules.user.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ import java.util.Map;
 @RequestMapping("${spring.api.prefix}/user")
 public class UserController {
     UserService userService;
+    AuthenticationService authenticationService;
     long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     List<String> ALLOWED_CONTENT_TYPES = Arrays.asList("image/jpeg", "image/png", "image/jpg");
 
@@ -92,6 +95,20 @@ public class UserController {
     ResponseEntity<?> deleteById(){
         userService.deleteAccount();
         return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công"));
+    }
+
+    @PostMapping("/change-password-otp")
+    ResponseEntity<?> requestChangePasswordOtp() {
+        authenticationService.requestChangePasswordOtp();
+        ApiResponse<?> response = ApiResponse.success("Mã OTP xác nhận đổi mật khẩu đã được gửi đến email!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/change-password")
+    ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authenticationService.changePassword(request.getOldPassword(), request.getNewPassword(), request.getOtpCode());
+        ApiResponse<?> response = ApiResponse.success("Đổi mật khẩu thành công!");
+        return ResponseEntity.ok(response);
     }
 
 }

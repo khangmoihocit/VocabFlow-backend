@@ -28,4 +28,12 @@ public interface UserRepository extends JpaRepository<@NonNull User, @NonNull UU
     @Modifying
     @Query("update User u set u.isDeleted = true where u.id = :uuid")
     int deleteSoft(UUID uuid);
+
+    @Modifying
+    @Query("update User u set u.isVerified = true where u.email = :email")
+    int updateIsVerified(String email);
+
+    @Modifying
+    @Query("update User u set u.passwordHash = :password where u.email = :email")
+    int updatePassword(String password, String email);
 }
