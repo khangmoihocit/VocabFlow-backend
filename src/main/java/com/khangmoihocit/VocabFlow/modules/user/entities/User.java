@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -38,11 +39,30 @@ public class User {
     String role = RoleEnum.USER.toString();
 
     @Column(name = "anki_deck_name")
-    String ankiDeckName;
+    @Builder.Default
+    String ankiDeckName = "VocabFlow";
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     Boolean isActive = true;
+
+    @Column(name = "avatar_url")
+    String avatarUrl;
+
+    @Column(name = "provider")
+    @Builder.Default
+    String provider = "LOCAL";
+
+    @Column(name = "provider_id")
+    String providerId;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    Boolean isDeleted = false;
+
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default
+    Boolean isVerified = false;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp

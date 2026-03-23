@@ -40,6 +40,25 @@ spring:
         chat:
           options:
             model: gemini-2.5-flash-lite
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT_ID}
+            client-secret: ${CLIENT_SECRET}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 gemini:
   model: gemini-2.5-flash-lite
   key-cooldown-seconds: 60  # Thời gian (giây) chờ trước khi thử lại key bị lỗi
@@ -50,3 +69,8 @@ gemini:
     - ${GEMINI_API_KEY_4}
     - ${GEMINI_API_KEY_5}
     - ${GEMINI_API_KEY_6}
+
+cloudinary:
+  cloud-name: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}

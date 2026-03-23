@@ -1,20 +1,27 @@
 package com.khangmoihocit.VocabFlow.modules.user.controllers;
 
+import com.google.protobuf.Api;
 import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.exception.OurException;
+import com.khangmoihocit.VocabFlow.core.services.CloudinaryService;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.ChangePasswordRequest;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserUpdateRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
+import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
 import com.khangmoihocit.VocabFlow.modules.user.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -23,6 +30,40 @@ import java.util.Map;
 @RequestMapping("${spring.api.prefix}/user")
 public class UserController {
     UserService userService;
+    AuthenticationService authenticationService;
+    long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    List<String> ALLOWED_CONTENT_TYPES = Arrays.asList("image/jpeg", "image/png", "image/jpg");
+
+    @PostMapping("/upload-avatar")
+    public ResponseEntity<?> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng chọn một file ảnh!"));
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Định dạng không hợp lệ! Chỉ chấp nhận ảnh JPG hoặc PNG."));
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB."));
+        }
+
+        try{
+            String avatarUrl = userService.uploadAvatar(file);
+            return ResponseEntity.ok(ApiResponse.success(avatarUrl));
+        }catch (OurException ex){
+            return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/me")
+    ResponseEntity<?> me(){
+        UserResponse userResponse = userService.getMyInfo();
+
+        ApiResponse<UserResponse> response =  ApiResponse.success(userResponse, "Tải thông tin của bạn thành công!");
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -36,4 +77,38 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping
+    ResponseEntity<?> updateInfo(@Valid @RequestBody UserUpdateRequest request){
+        ApiResponse<UserResponse> response = ApiResponse.success(userService.updateBasicInfo(request), "Cập nhật thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/toggle-active-account/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    ResponseEntity<?> toggleActiveAccount(@PathVariable(name = "id") String id){
+        userService.toggleActiveAccount(id);
+        return ResponseEntity.ok(ApiResponse.success("cập nhật trạng thái tài khoản thành công"));
+    }
+
+    @DeleteMapping
+    ResponseEntity<?> deleteById(){
+        userService.deleteAccount();
+        return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công"));
+    }
+
+    @PostMapping("/change-password-otp")
+    ResponseEntity<?> requestChangePasswordOtp() {
+        authenticationService.requestChangePasswordOtp();
+        ApiResponse<?> response = ApiResponse.success("Mã OTP xác nhận đổi mật khẩu đã được gửi đến email!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/change-password")
+    ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authenticationService.changePassword(request.getOldPassword(), request.getNewPassword(), request.getOtpCode());
+        ApiResponse<?> response = ApiResponse.success("Đổi mật khẩu thành công!");
+        return ResponseEntity.ok(response);
+    }
+
 }

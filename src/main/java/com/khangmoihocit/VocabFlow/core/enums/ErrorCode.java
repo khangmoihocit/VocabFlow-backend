@@ -14,6 +14,13 @@ public enum ErrorCode {
     UNAUTHENTICATED("UNAUTHENTICATED", "Please login!", HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "Sai tài khoản hoặc mật khẩu", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("ACCESS_DENIED", "Bạn không có quyền truy cập", HttpStatus.FORBIDDEN),
+    ACCOUNT_ALREADY_GOOGLE("ACCOUNT_ALREADY_GOOGLE", "Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập lại.", HttpStatus.BAD_REQUEST),
+    USER_DETAIL_IS_NULL("USER_DETAIL_IS_NULL", "không thể lấy user detail", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_REGISTER("EMAIL_NOT_REGISTER", "email chưa được đăng ký.", HttpStatus.NOT_FOUND),
+    OTP_VERIFY_ERROR("OTP_VERIFY_ERROR", "Mã OTP không hợp lệ.", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_VERIFIED("USER_ALREADY_VERIFIED", "email này đã được xác thực.", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED("OTP_EXPIRED", "Mã otp đã hết hạn.", HttpStatus.BAD_REQUEST),
+    ACCOUNT_NOT_VERIFY("ACCOUNT_NOT_VERIFY", "Tài khoản chưa được xác thực", HttpStatus.BAD_REQUEST),
 
     // ===== TOKEN =====
     INVALID_TOKEN("INVALID_TOKEN", "Token không hợp lệ", HttpStatus.UNAUTHORIZED),
@@ -29,7 +36,7 @@ public enum ErrorCode {
     ACCOUNT_DISABLED("ACCOUNT_DISABLED", "Tài khoản đã bị vô hiệu hóa", HttpStatus.FORBIDDEN),
     EMAIL_ALREADY_EXISTS("EMAIL_ALREADY_EXISTS", "Email đã tồn tại", HttpStatus.CONFLICT),
     USER_IS_EMPTY("USER_IS_EMPTY", "Danh sách người dùng trống", HttpStatus.NOT_FOUND),
-
+    ACCOUNT_DELETED_BUT_CAN_RECOVER("ACCOUNT_DELETED_BUT_CAN_RECOVER", "Email này đã từng được sử dụng và bị xóa. Chúng tôi đã gửi link khôi phục đến email của bạn.", HttpStatus.BAD_REQUEST),
     // ===== VALIDATION =====
     VALIDATION_ERROR("VALIDATION_ERROR", "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
 

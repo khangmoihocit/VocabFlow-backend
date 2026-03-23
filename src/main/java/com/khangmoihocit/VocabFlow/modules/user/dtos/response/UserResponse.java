@@ -18,6 +18,11 @@ public class UserResponse {
     String role;
     String ankiDeckName;
     Boolean isActive;
+    String avatarUrl;
+    String provider;
+    String providerId;
+    Boolean isDeleted;
+    Boolean isVerified;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }
