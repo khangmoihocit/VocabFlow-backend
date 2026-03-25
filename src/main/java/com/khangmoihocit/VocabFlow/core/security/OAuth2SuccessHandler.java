@@ -16,6 +16,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -92,26 +94,31 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             vocabularyGroupRepository.save(defaultGroup);
         }
 
-        // Tạo JWT Token
         String accessToken = jwtService.generateAccessToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
-        // Set Access Token Cookie
-        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(2 * 60 * 60); // 2h
-        response.addCookie(accessTokenCookie);
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+                .path("/")
+                .maxAge(2 * 60 * 60)
+                .sameSite("None")
+                .secure(true)
+                .httpOnly(false)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
-        // Set Refresh Token Cookie
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(5 * 24 * 60 * 60); // 5 ngày
-        response.addCookie(refreshTokenCookie);
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .path("/")
+                .maxAge(5 * 24 * 60 * 60) // 5 ngày
+                .sameSite("None")
+                .secure(true)
+                .httpOnly(false)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         UserResponse userResponse = userMapper.toUserResponse(user);
         setUserCookie(userResponse, response);
 
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/");
+        getRedirectStrategy().sendRedirect(request, response, "https://vocab-flow-silk.vercel.app/");
     }
 
     private void setUserCookie(UserResponse userResponse, HttpServletResponse response) {
@@ -124,12 +131,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             String encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString());
 
-            Cookie userCookie = new Cookie("user", encodedUserJson);
-            userCookie.setPath("/");
-            userCookie.setMaxAge(5 * 24 * 60 * 60);
-            userCookie.setHttpOnly(false);
+            ResponseCookie userCookie = ResponseCookie.from("user", encodedUserJson)
+                    .path("/")
+                    .maxAge(5 * 24 * 60 * 60) // 5 ngày
+                    .sameSite("None")
+                    .secure(true)
+                    .httpOnly(false)
+                    .build();
 
-            response.addCookie(userCookie);
+            response.addHeader(HttpHeaders.SET_COOKIE, userCookie.toString());
+
         } catch (Exception e) {
             System.err.println("Lỗi khi lưu User vào Cookie: " + e.getMessage());
         }
