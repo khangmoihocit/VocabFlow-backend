@@ -22,6 +22,7 @@ import com.khangmoihocit.VocabFlow.modules.user.repositories.RefreshTokenReposit
 import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
 import com.khangmoihocit.VocabFlow.modules.user.services.AuthenticationService;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.VocabularyGroup;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.UserSavedWordRepository;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.VocabularyGroupRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -57,6 +58,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     PasswordEncoder passwordEncoder;
     VocabularyGroupRepository vocabularyGroupRepository;
     OtpTokenRepository otpTokenRepository;
+    UserSavedWordRepository userSavedWordRepository;
     EmailService emailService;
 
     private void saveRefreshTokenToDB(String refreshToken, User user) {
@@ -290,5 +292,35 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         otpTokenRepository.delete(otpToken);
+    }
+
+    @Override
+    @Transactional
+    public void recoverAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!user.getIsDeleted()) {
+            throw new AppException(ErrorCode.ACCOUNT_EXIST_IS_TRUE);
+        }
+
+        user.setIsDeleted(false);
+        userRepository.save(user);
+
+        log.info("Đã khôi phục thành công tài khoản cho email: {}", email);
+    }
+
+    @Override
+    public void reNewAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (!user.getIsDeleted()) {
+            throw new AppException(ErrorCode.ACCOUNT_EXIST_IS_TRUE);
+        }
+
+        refreshTokenRepository.deleteByUserId(user.getId());
+        vocabularyGroupRepository.deleteByUserId(user.getId());
+        userSavedWordRepository.deleteByUserId(user.getId());
+        userRepository.deleteById(user.getId());
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,7 @@ public interface UserSavedWordRepository extends JpaRepository<UserSavedWord, Lo
     Optional<UserSavedWord> findByIdAndUserId(Long id, UUID userId);
 
     List<UserSavedWord> findByUserIdAndAnkiStatus(UUID userId, AnkiStatus ankiStatus);
+
+    @Transactional
+    void deleteByUserId(UUID uuid);
 }

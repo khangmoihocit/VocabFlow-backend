@@ -26,7 +26,14 @@ public class GenericSpecification<T> implements Specification<@NonNull T> { //t�
             }
         }
         else if(criteria.getOperation().equalsIgnoreCase("=")){
-            return builder.equal(root.get(criteria.getKey()), criteria.getValue());
+            if (root.get(criteria.getKey()).getJavaType() == String.class) {
+                return builder.equal(
+                        builder.lower(root.get(criteria.getKey())),
+                        criteria.getValue().toString().toLowerCase()
+                );
+            } else {
+                return builder.equal(root.get(criteria.getKey()), criteria.getValue());
+            }
         }
         // Phép LỚN HƠN (Dùng cho giá cả, ngày tháng...)
         else if (criteria.getOperation().equalsIgnoreCase(">")) {

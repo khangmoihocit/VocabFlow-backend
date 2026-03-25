@@ -46,13 +46,19 @@ public class SecurityConfig {
 
     String[] PUBLIC_POST_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/oauth2/**"
+            "/oauth2/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
     };
 
     String [] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/topics/find-all",
             "/api/v1/auth/**",
-            "/oauth2/**"
+            "/oauth2/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
     };
 
     @Bean

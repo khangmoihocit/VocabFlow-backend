@@ -1,17 +1,15 @@
 #spring.application.name=VocabFlow
 server:
-  port: 8085
-
+  port: ${PORT:8085}
+#jdbc:postgresql://localhost:5432/vocabflow_db
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/vocabflow_db
-    username: postgres
-    password: root
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    # QUAN TRỌNG: Khi dùng Flyway, KHÔNG ĐƯỢC để Hibernate tự tạo bảng nữa
-    # Chỉ cho phép nó 'validate' xem Entity code có khớp với Database thật không
     hibernate:
       ddl-auto: validate
     show-sql: true
@@ -21,17 +19,17 @@ spring:
 
   flyway:
     enabled: true
-    baseline-on-migrate: true # Cho phép chạy Flyway trên database đã có sẵn table (nếu có)
-    locations: classpath:db/migration # Đường dẫn chứa file SQL
+    baseline-on-migrate: true
+    locations: classpath:db/migration
 
   api:
     prefix: /api/v1
 
   jwt:
-    signerKey: U29tZXZlcnlsb25ncmFuZG9tc3RyaW5ndGhhdGlzbW9yZXRoYW42NGJ5dGVzZm9yaHM1MTJzZWN1cml0eWNoZWNrMTIzNDU2Nzg5MQA=
-    valid-duration: 7200 #in second (2 hour)
-    refreshable-duration: 432000 #in second 432 000 (5day)
-    issuer: khangmoihocit
+    signerKey: ${JWT_KEY}
+    valid-duration: ${JWT_VALID_DURATION} # 7200 #in second (2 hour)
+    refreshable-duration: ${JWT_REFRESHABLE_DURATION} #432000 #in second 432 000 (5day)
+    issuer: ${JWT_ISSUER}
 
   ai:
     google:

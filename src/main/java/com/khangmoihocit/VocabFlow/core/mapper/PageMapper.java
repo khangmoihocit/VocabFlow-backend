@@ -16,7 +16,7 @@ public interface PageMapper {
      */
     default <T> PageResponse<T> toPageResponse(Page<?> page, List<T> content) {
         return PageResponse.<T>builder()
-                .pageNo(page.getNumber() + 1)           // chuyển từ 0-based sang 1-based
+                .pageNo(page.getNumber() + 1)
                 .pageSize(page.getSize())
                 .totalElements(page.getTotalElements())
                 .totalPages(page.getTotalPages())
