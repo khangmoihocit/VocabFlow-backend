@@ -1,5 +1,9 @@
 package com.khangmoihocit.VocabFlow.modules.user.services.Impl;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.core.exception.OurException;
@@ -8,6 +12,7 @@ import com.khangmoihocit.VocabFlow.core.security.JwtService;
 import com.khangmoihocit.VocabFlow.core.security.UserDetailsCustom;
 import com.khangmoihocit.VocabFlow.core.services.EmailService;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.AuthenticationRequest;
+import com.khangmoihocit.VocabFlow.modules.user.dtos.request.GoogleLoginRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.RefreshTokenRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.UserCreationRequest;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.AuthenticationResponse;
@@ -31,7 +36,9 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -41,6 +48,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.security.auth.login.AccountException;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -60,6 +70,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     OtpTokenRepository otpTokenRepository;
     UserSavedWordRepository userSavedWordRepository;
     EmailService emailService;
+
+    @NonFinal
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    String clientId;
 
     private void saveRefreshTokenToDB(String refreshToken, User user) {
         List<RefreshToken> refreshTokenList = refreshTokenRepository.getAllByUserId(user.getId());
@@ -130,6 +144,79 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .refreshToken(refreshToken)
                 .user(userMapper.toUserResponse(user))
                 .build();
+    }
+
+    @Override
+    public AuthenticationResponse loginWithGoogle(GoogleLoginRequest request) throws GeneralSecurityException, IOException {
+        NetHttpTransport transport = new NetHttpTransport();
+        GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+        // 1. Cấu hình Verifier với Client ID của dự án
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                .setAudience(Collections.singletonList(clientId))
+                .build();
+
+        // 2. Xác thực Token
+        GoogleIdToken idToken = verifier.verify(request.getToken());
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+
+            // 3. Trích xuất thông tin
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String picture = (String) payload.get("picture");
+            String googleId = payload.getSubject();
+
+            Optional<User> optionalUser = userRepository.findByEmail(email);
+            User user;
+
+            if (optionalUser.isPresent()) {
+                user = optionalUser.get();
+                if (user.getIsDeleted()) {
+                    throw new AppException(ErrorCode.ACCOUNT_DELETED_BUT_CAN_RECOVER);
+                }
+                if ("LOCAL".equals(user.getProvider())) {
+                    user.setProvider("GOOGLE");
+                    user.setProviderId(googleId);
+                    userRepository.save(user);
+                }
+                if (user.getAvatarUrl() == null || user.getAvatarUrl().isEmpty()) {
+                    user.setAvatarUrl(picture);
+                    userRepository.save(user);
+                }
+            } else {
+                User newUser = new User();
+                newUser.setEmail(email);
+                newUser.setFullName(name);
+                newUser.setAvatarUrl(picture);
+                newUser.setRole("USER");
+                newUser.setPasswordHash("");
+                newUser.setProvider("GOOGLE");
+                newUser.setProviderId(googleId);
+                newUser.setIsVerified(true);
+                newUser.setIsDeleted(false);
+                user = userRepository.save(newUser);
+
+                VocabularyGroup defaultGroup = VocabularyGroup.builder()
+                        .userId(newUser.getId())
+                        .name("DEFAULT")
+                        .isDefault(true)
+                        .build();
+                vocabularyGroupRepository.save(defaultGroup);
+            }
+
+            String accessToken = jwtService.generateAccessToken(user.getEmail());
+            String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+            saveRefreshTokenToDB(refreshToken, user);
+
+            return AuthenticationResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .user(userMapper.toUserResponse(user))
+                    .build();
+        }else{
+            throw new OurException("id gg is null");
+        }
     }
 
     @Override

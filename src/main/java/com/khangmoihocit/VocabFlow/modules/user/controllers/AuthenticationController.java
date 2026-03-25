@@ -1,5 +1,6 @@
 package com.khangmoihocit.VocabFlow.modules.user.controllers;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.request.*;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.AuthenticationResponse;
@@ -12,6 +13,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 @Slf4j(topic = "AuthenticationController")
 @RequiredArgsConstructor
@@ -87,6 +91,14 @@ public class AuthenticationController {
         ApiResponse<?> response = ApiResponse.success(
                 "Bây giờ bạn có thể đăng nhập lại."
         );
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleLoginRequest request) throws GeneralSecurityException, IOException {
+        AuthenticationResponse authenticationResponse = authenticationService.loginWithGoogle(request);
+        ApiResponse<AuthenticationResponse> response =
+                ApiResponse.success(authenticationResponse, "Đăng nhập thành công!");
         return ResponseEntity.ok(response);
     }
 

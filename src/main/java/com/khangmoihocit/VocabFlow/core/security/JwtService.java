@@ -40,6 +40,8 @@ public class JwtService {
     @Value("${spring.jwt.refreshable-duration}")
     protected long REFRESH_TOKEN_VALID_DURATION;
 
+
+
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SIGNER_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
