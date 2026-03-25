@@ -98,7 +98,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://vocab-flow-silk.vercel.app/", // Cho phép Web React
+                "https://vocab-flow-silk.vercel.app", // Cho phép Web React
                 "chrome-extension://*"         // Cho phép Chrome Extension
         ));
         configuration.setAllowCredentials(true);
