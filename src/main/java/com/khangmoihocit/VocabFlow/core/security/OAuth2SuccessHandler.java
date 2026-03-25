@@ -1,10 +1,14 @@
 package com.khangmoihocit.VocabFlow.core.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
+import com.khangmoihocit.VocabFlow.core.exception.AppException;
 import com.khangmoihocit.VocabFlow.modules.user.dtos.response.UserResponse;
 import com.khangmoihocit.VocabFlow.modules.user.entities.User;
 import com.khangmoihocit.VocabFlow.modules.user.mappers.UserMapper;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.entities.VocabularyGroup;
+import com.khangmoihocit.VocabFlow.modules.vocabulary.repositories.VocabularyGroupRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +33,7 @@ import java.util.Optional;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     UserRepository userRepository;
+    VocabularyGroupRepository vocabularyGroupRepository;
     JwtService jwtService;
     UserMapper userMapper;
 
@@ -47,6 +52,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         if (optionalUser.isPresent()) {
             user = optionalUser.get();
+            if(user.getIsDeleted()){
+                String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.toString());
+                String redirectUrl = "http://localhost:5173/login?error=account_deleted&email=" + encodedEmail;
+
+                getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+                return;
+            }
 
             if (user.getProvider().equals("LOCAL")) {
                 user.setProvider("GOOGLE");
@@ -70,8 +82,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             newUser.setProviderId(googleId);
             newUser.setIsVerified(true);
             newUser.setIsDeleted(false);
-
             user = userRepository.save(newUser);
+
+            VocabularyGroup defaultGroup = VocabularyGroup.builder()
+                    .userId(newUser.getId())
+                    .name("DEFAULT")
+                    .isDefault(true)
+                    .build();
+            vocabularyGroupRepository.save(defaultGroup);
         }
 
         // Tạo JWT Token

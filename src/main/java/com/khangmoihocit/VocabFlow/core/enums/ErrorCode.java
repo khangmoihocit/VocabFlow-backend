@@ -21,6 +21,7 @@ public enum ErrorCode {
     USER_ALREADY_VERIFIED("USER_ALREADY_VERIFIED", "email này đã được xác thực.", HttpStatus.BAD_REQUEST),
     OTP_EXPIRED("OTP_EXPIRED", "Mã otp đã hết hạn.", HttpStatus.BAD_REQUEST),
     ACCOUNT_NOT_VERIFY("ACCOUNT_NOT_VERIFY", "Tài khoản chưa được xác thực", HttpStatus.BAD_REQUEST),
+    ACCOUNT_EXIST_IS_TRUE("ACCOUNT_EXIST_IS_TRUE", "Tài khoản này đang hoạt động bình thường, không cần khôi phục!", HttpStatus.BAD_REQUEST),
 
     // ===== TOKEN =====
     INVALID_TOKEN("INVALID_TOKEN", "Token không hợp lệ", HttpStatus.UNAUTHORIZED),

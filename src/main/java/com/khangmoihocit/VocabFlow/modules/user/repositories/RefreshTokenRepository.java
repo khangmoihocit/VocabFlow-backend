@@ -2,6 +2,7 @@ package com.khangmoihocit.VocabFlow.modules.user.repositories;
 
 import com.khangmoihocit.VocabFlow.modules.user.entities.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,4 +19,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     @Transactional //hàm custom sẽ cần transaction
     void deleteByToken (String token);
+
+    @Transactional
+    int deleteByUserId(UUID uuid);
 }

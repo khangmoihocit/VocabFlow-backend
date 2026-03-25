@@ -72,4 +72,22 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/recover-account")
+    ResponseEntity<?> recoverAccount(@Valid @RequestBody RecoverAccountRequest request) {
+        authenticationService.recoverAccount(request.getEmail());
+        ApiResponse<?> response = ApiResponse.success(
+                "Tài khoản của bạn đã được khôi phục thành công! Vui lòng đăng nhập lại."
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/re-new-account")
+    ResponseEntity<?> reNewAccount(@Valid @RequestBody RecoverAccountRequest request) {
+        authenticationService.reNewAccount(request.getEmail());
+        ApiResponse<?> response = ApiResponse.success(
+                "Bây giờ bạn có thể đăng nhập lại."
+        );
+        return ResponseEntity.ok(response);
+    }
+
 }

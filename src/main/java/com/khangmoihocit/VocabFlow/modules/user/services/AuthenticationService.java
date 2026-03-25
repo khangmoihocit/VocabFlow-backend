@@ -29,4 +29,8 @@ public interface AuthenticationService {
     void requestChangePasswordOtp();
 
     void changePassword(String oldPassword, String newPassword, String otp);
+
+    void recoverAccount(String email);
+
+    void reNewAccount(String email);
 }

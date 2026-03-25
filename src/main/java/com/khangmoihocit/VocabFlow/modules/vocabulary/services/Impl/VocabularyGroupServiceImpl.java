@@ -45,7 +45,7 @@ public class VocabularyGroupServiceImpl implements VocabularyGroupService {
         Pageable pageable = PageRequest.of(pageNo-1, pageSize, SortUtil.createSort(sort));
         GenericSpecificationBuilder<VocabularyGroup> builder = new GenericSpecificationBuilder<>();
         builder.with("userId", "=", userDetails.getId());
-        if(StringUtils.hasText(keyword)) builder.with("name", "=", keyword);
+        if(StringUtils.hasText(keyword)) builder.with("name", "=", keyword.toLowerCase());
 
         Specification<VocabularyGroup> specification = builder.build();
         Page<VocabularyGroup> vocabularyGroupPage = vocabularyGroupRepository.findAll(specification, pageable);
