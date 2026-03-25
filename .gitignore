@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Bỏ qua các file cấu hình chứa key thật
+.env
+application-dev.yml
+application-prod.yml
