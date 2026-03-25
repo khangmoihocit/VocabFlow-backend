@@ -97,7 +97,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",       // Cho phép Web React
+                "http://localhost:5173",
+                "https://vocab-flow-silk.vercel.app/", // Cho phép Web React
                 "chrome-extension://*"         // Cho phép Chrome Extension
         ));
         configuration.setAllowCredentials(true);
