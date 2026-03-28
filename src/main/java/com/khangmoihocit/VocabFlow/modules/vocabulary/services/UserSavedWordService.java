@@ -1,6 +1,7 @@
 package com.khangmoihocit.VocabFlow.modules.vocabulary.services;
 
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
+import com.khangmoihocit.VocabFlow.core.enums.AnkiStatus;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.UserSavedWordResponse;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.response.WordSavedFindResponse;
@@ -14,4 +15,9 @@ public interface UserSavedWordService {
     void deleteBySavedWordId(Long userSavedWordId);
 
     int syncWithAnki();
+
+    int resyncWithAnki(Long vocabularyGroupId);
+
+    int updateAnkiStatus(AnkiStatus status);
+
 }

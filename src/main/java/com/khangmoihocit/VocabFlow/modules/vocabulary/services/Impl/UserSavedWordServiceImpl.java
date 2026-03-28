@@ -8,6 +8,7 @@ import com.khangmoihocit.VocabFlow.core.mapper.PageMapper;
 import com.khangmoihocit.VocabFlow.core.security.UserDetailsCustom;
 import com.khangmoihocit.VocabFlow.core.specification.GenericSpecificationBuilder;
 import com.khangmoihocit.VocabFlow.core.utils.SortUtil;
+import com.khangmoihocit.VocabFlow.core.utils.UserDetailUtil;
 import com.khangmoihocit.VocabFlow.modules.user.entities.User;
 import com.khangmoihocit.VocabFlow.modules.user.repositories.UserRepository;
 import com.khangmoihocit.VocabFlow.modules.vocabulary.dtos.request.UserSaveWordRequest;
@@ -113,7 +114,7 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
         UserDetailsCustom userDetails = (UserDetailsCustom) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
         User user = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String rootDeckName = (user.getAnkiDeckName() != null && !user.getAnkiDeckName().isEmpty())
                 ? user.getAnkiDeckName() : "VocabFlow";
@@ -146,5 +147,44 @@ public class UserSavedWordServiceImpl implements UserSavedWordService {
         }
 
         return successCount;
+    }
+
+    @Override
+    public int resyncWithAnki(Long vocabularyGroupId) {
+        User user = userRepository.findById(UserDetailUtil.get().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        String rootDeckName = (user.getAnkiDeckName() != null && !user.getAnkiDeckName().isEmpty())
+                ? user.getAnkiDeckName() : "VocabFlow";
+
+        List<UserSavedWord> resyncWords = userSavedWordRepository.findByUserIdAndVocabularyGroupId(user.getId(), vocabularyGroupId);
+
+        if (resyncWords.isEmpty()) {
+            return 0;
+        }
+
+        int successCount = 0;
+
+        for (UserSavedWord savedWord : resyncWords) {
+            String subDeckName = savedWord.getVocabularyGroup().getName();
+            String fullDeckName = rootDeckName + "::" + subDeckName;
+
+            ankiConnectService.createDeck(fullDeckName);
+            Long ankiNoteId = ankiConnectService.addNote(fullDeckName, savedWord.getDictionaryWord());
+
+            if (ankiNoteId != null) {
+                savedWord.setAnkiNoteId(ankiNoteId);
+                savedWord.setAnkiStatus(AnkiStatus.SYNCED);
+                userSavedWordRepository.save(savedWord);
+                successCount++;
+            }
+        }
+
+        return successCount;
+    }
+
+    @Override
+    public int updateAnkiStatus(AnkiStatus status) {
+        return 0;
     }
 }
