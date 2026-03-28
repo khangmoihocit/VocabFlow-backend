@@ -75,4 +75,29 @@ public class UserSavedWordController {
             );
         }
     }
+
+    @PostMapping("/resync-anki/{vocabularyGroupId}")
+    public ResponseEntity<?> resyncVocabularyToAnki(@PathVariable Long vocabularyGroupId) {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("127.0.0.1", 8765), 2000);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Lỗi: Anki chưa được mở hoặc AnkiConnect chưa cấu hình đúng port 8765!")
+            );
+        }
+
+        try {
+            int syncedCount = userSavedWordService.resyncWithAnki(vocabularyGroupId);
+
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("syncedWords", syncedCount),
+                    "Đồng bộ thành công " + syncedCount + " từ vựng sang Anki!"
+            ));
+        } catch (Exception e) {
+            log.error("Sync Anki failed", e);
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Lỗi đồng bộ Anki: " + e.getMessage())
+            );
+        }
+    }
 }
