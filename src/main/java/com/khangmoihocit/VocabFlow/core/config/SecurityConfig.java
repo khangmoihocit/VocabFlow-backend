@@ -3,7 +3,6 @@ package com.khangmoihocit.VocabFlow.core.config;
 import com.khangmoihocit.VocabFlow.core.security.JwtAccessDeniedHandler;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationEntryPoint;
 import com.khangmoihocit.VocabFlow.core.security.JwtAuthenticationFilter;
-import com.khangmoihocit.VocabFlow.core.security.OAuth2SuccessHandler;
 import com.khangmoihocit.VocabFlow.modules.user.services.Impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -42,7 +41,7 @@ public class SecurityConfig {
     JwtAuthenticationFilter jwtAuthFilter;
     JwtAccessDeniedHandler jwtAccessDeniedHandler;
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    OAuth2SuccessHandler oAuth2SuccessHandler;
+//    OAuth2SuccessHandler oAuth2SuccessHandler;
 
     String[] PUBLIC_POST_ENDPOINTS = {
             "/api/v1/auth/**",
