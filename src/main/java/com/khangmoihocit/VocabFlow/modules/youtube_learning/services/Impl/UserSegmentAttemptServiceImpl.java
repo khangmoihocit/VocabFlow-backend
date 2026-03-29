@@ -41,7 +41,7 @@ public class UserSegmentAttemptServiceImpl implements UserSegmentAttemptService 
     @Transactional
     public List<UserSegmentAttemptResponse> save(List<AttemptRequest> requests) {
         UUID currentUserId = UserDetailUtil.get().getId();
-        User user = userRepository.findById(currentUserId).orElseThrow();
+        User user = userRepository.getReferenceById(currentUserId);
 
         List<Long> segmentIds = requests.stream()
                 .map(AttemptRequest::getSegmentId)
