@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class VocabularyGroupRequest {
     @NotBlank(message = "tên bộ từ vựng không được để trống")

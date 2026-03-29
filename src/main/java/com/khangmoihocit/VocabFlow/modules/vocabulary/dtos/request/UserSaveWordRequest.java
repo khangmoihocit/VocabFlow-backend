@@ -6,7 +6,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Getter
-@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserSaveWordRequest {
     @NotNull(message = "từ/cụm từ không được để trống")

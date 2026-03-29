@@ -2,6 +2,8 @@ package com.khangmoihocit.VocabFlow.modules.youtube_learning.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,10 +27,10 @@ public class VideoSegment {
     private Integer segmentOrder;
 
     @Column(name = "start_time", nullable = false)
-    private Double startTime;
+    private BigDecimal startTime;
 
     @Column(name = "end_time", nullable = false)
-    private Double endTime;
+    private BigDecimal endTime;
 
     @Column(name = "english_text", columnDefinition = "TEXT", nullable = false)
     private String englishText;
