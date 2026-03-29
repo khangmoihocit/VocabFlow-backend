@@ -2,6 +2,7 @@ package com.khangmoihocit.VocabFlow.modules.youtube_learning.controllers;
 
 import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.youtube_learning.dtos.request.VideoSegmentToolRequest;
+import com.khangmoihocit.VocabFlow.modules.youtube_learning.dtos.response.VideoDetailResponse;
 import com.khangmoihocit.VocabFlow.modules.youtube_learning.services.VideoSegmentService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -26,5 +27,12 @@ public class VideoSegmentController {
         videoSegmentService.importSegmentsFromTool(videoId, toolRequests);
         return ResponseEntity.ok(
                 ApiResponse.success("import thành công các segment của video " + videoId + " !"));
+    }
+
+    @GetMapping("/{videoId}/study-detail")
+    ResponseEntity<?> get(@PathVariable Long videoId){
+        VideoDetailResponse videoDetailResponse = videoSegmentService.getById(videoId);
+        ApiResponse<VideoDetailResponse> response = ApiResponse.success(videoDetailResponse, "Tải bài học video thành công!");
+        return ResponseEntity.ok(response);
     }
 }
