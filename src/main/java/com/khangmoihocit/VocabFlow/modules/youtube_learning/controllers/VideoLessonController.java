@@ -24,7 +24,7 @@ public class VideoLessonController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    ResponseEntity<?> create(@Valid @RequestBody VideoLessonRequest request){
+    ResponseEntity<?> create(@Valid @RequestBody VideoLessonRequest request) {
         VideoLessonResponse videoLessonResponse = videoLessonService.createVideoLesson(request);
         ApiResponse<VideoLessonResponse> response = ApiResponse.success(videoLessonResponse, "create video lesson success");
         return ResponseEntity.ok(response);
@@ -32,7 +32,7 @@ public class VideoLessonController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    ResponseEntity<?> update(@Valid @RequestBody VideoLessonRequest request, @PathVariable Long id){
+    ResponseEntity<?> update(@Valid @RequestBody VideoLessonRequest request, @PathVariable Long id) {
         VideoLessonResponse videoLessonResponse = videoLessonService.updateVideoLesson(id, request);
         ApiResponse<VideoLessonResponse> response = ApiResponse.success(videoLessonResponse, "update video lesson success");
         return ResponseEntity.ok(response);
@@ -40,27 +40,27 @@ public class VideoLessonController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
-    ResponseEntity<?> getById(@PathVariable Long id){
+    ResponseEntity<?> getById(@PathVariable Long id) {
         VideoLessonResponse videoLessonResponse = videoLessonService.getVideoLessonById(id);
         ApiResponse<VideoLessonResponse> response = ApiResponse.success(videoLessonResponse, "get video lesson success");
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/find-all")
+    @GetMapping("/find-all/{channelId}")
     ResponseEntity<?> findAll(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo,
                               @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
                               @RequestParam(name = "sort", defaultValue = "id,asc") String sort,
-                              @RequestParam(name = "keyword", defaultValue = "") String keyword){
+                              @RequestParam(name = "keyword", defaultValue = "") String keyword,
+                              @PathVariable Long channelId) {
         PageResponse<VideoLessonResponse> videoLessonResponse =
-                videoLessonService.getAllVideoLessons(pageNo, pageSize, sort, keyword);
+                videoLessonService.getAllVideoLessons(pageNo, pageSize, sort, channelId, keyword);
         ApiResponse<PageResponse<VideoLessonResponse>> response = ApiResponse.success(videoLessonResponse, "get all video lesson success");
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    ResponseEntity<?> deleteById(@PathVariable Long id){
+    ResponseEntity<?> deleteById(@PathVariable Long id) {
         videoLessonService.deleteVideoLesson(id);
         ApiResponse<?> response = ApiResponse.success("deleted video lesson success");
         return ResponseEntity.ok(response);

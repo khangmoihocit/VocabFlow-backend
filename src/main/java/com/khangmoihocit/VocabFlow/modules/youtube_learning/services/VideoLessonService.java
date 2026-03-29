@@ -7,7 +7,7 @@ import com.khangmoihocit.VocabFlow.modules.youtube_learning.dtos.response.VideoL
 public interface VideoLessonService {
     VideoLessonResponse createVideoLesson(VideoLessonRequest request);
 
-    PageResponse<VideoLessonResponse> getAllVideoLessons(int pageNo, int pageSize, String sort, String keyword);
+    PageResponse<VideoLessonResponse> getAllVideoLessons(int pageNo, int pageSize, String sort, Long channelId, String keyword);
 
     VideoLessonResponse getVideoLessonById(Long id);
 

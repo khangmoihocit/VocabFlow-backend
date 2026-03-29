@@ -16,8 +16,11 @@ import java.time.LocalDateTime;
 public class VideoLessonResponse {
     Long id;
     String youtubeVideoId;
+    Long youtubeChannelId;
     String title;
     String thumbnailUrl;
+    String duration;
+    String views;
     String difficultyLevel;
     Boolean isPublished;
     LocalDateTime createdAt;

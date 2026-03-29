@@ -46,7 +46,6 @@ public class YoutubeChannelController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/find-all")
     ResponseEntity<?> findAll(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo,
                               @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,

@@ -1,4 +1,5 @@
 package com.khangmoihocit.VocabFlow.modules.youtube_learning.services.Impl;
+
 import com.khangmoihocit.VocabFlow.core.dtos.PageResponse;
 import com.khangmoihocit.VocabFlow.core.enums.ErrorCode;
 import com.khangmoihocit.VocabFlow.core.exception.AppException;
@@ -47,11 +48,13 @@ public class VideoLessonServiceImpl implements VideoLessonService {
     }
 
     @Override
-    public PageResponse<VideoLessonResponse> getAllVideoLessons(int pageNo, int pageSize, String sort, String keyword) {
+    public PageResponse<VideoLessonResponse> getAllVideoLessons(int pageNo, int pageSize, String sort, Long channelId, String keyword) {
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, SortUtil.createSort(sort));
-        GenericSpecificationBuilder<VideoLesson> builder = new GenericSpecificationBuilder<>();
 
-        if(StringUtils.hasText(keyword)) builder.with("title", ":", keyword);
+        GenericSpecificationBuilder<VideoLesson> builder = new GenericSpecificationBuilder<>();
+        builder.withJoinById("channel", channelId);
+
+        if (StringUtils.hasText(keyword)) builder.with("title", ":", keyword);
 
         Specification<VideoLesson> specification = builder.build();
         Page<VideoLesson> videoLessonPage = videoLessonRepository.findAll(specification, pageable);
@@ -83,6 +86,8 @@ public class VideoLessonServiceImpl implements VideoLessonService {
         videoLesson.setThumbnailUrl(request.getThumbnailUrl());
         videoLesson.setDifficultyLevel(request.getDifficultyLevel());
         videoLesson.setIsPublished(request.getIsPublished());
+        videoLesson.setDuration(request.getDuration());
+        videoLesson.setViews(request.getViews());
 
         videoLesson = videoLessonRepository.save(videoLesson);
         return videoLessonMapper.toResponse(videoLesson);

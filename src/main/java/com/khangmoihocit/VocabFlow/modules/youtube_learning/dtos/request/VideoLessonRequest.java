@@ -22,6 +22,8 @@ public class VideoLessonRequest {
     String title;
 
     String thumbnailUrl;
+    String duration;
+    String views;
 
     String difficultyLevel;
     Boolean isPublished;

@@ -30,6 +30,12 @@ public class VideoLesson {
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 
+    @Column(name = "duration")
+    private String duration;
+
+    @Column(name = "views")
+    private String views;
+
     @Column(name = "difficulty_level", length = 20)
     @Builder.Default
     private String difficultyLevel = "MEDIUM";

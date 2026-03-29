@@ -57,7 +57,9 @@ public class SecurityConfig {
             "/oauth2/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/api/v1/youtube-channels/find-all",
+            "/api/v1/video-lessons/find-all/**"
     };
 
     @Bean
