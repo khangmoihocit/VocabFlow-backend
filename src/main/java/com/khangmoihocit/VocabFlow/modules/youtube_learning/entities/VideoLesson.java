@@ -31,9 +31,11 @@ public class VideoLesson {
     private String thumbnailUrl;
 
     @Column(name = "difficulty_level", length = 20)
+    @Builder.Default
     private String difficultyLevel = "MEDIUM";
 
     @Column(name = "is_published")
+    @Builder.Default
     private Boolean isPublished = false;
 
     @Column(name = "created_at", updatable = false)
