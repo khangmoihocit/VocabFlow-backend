@@ -53,6 +53,23 @@ public class VideoLessonServiceImpl implements VideoLessonService {
 
         GenericSpecificationBuilder<VideoLesson> builder = new GenericSpecificationBuilder<>();
         builder.withJoinById("channel", channelId);
+        builder.with("isPublished", "=", true);
+
+        if (StringUtils.hasText(keyword)) builder.with("title", ":", keyword);
+
+        Specification<VideoLesson> specification = builder.build();
+        Page<VideoLesson> videoLessonPage = videoLessonRepository.findAll(specification, pageable);
+
+        return pageMapper.toPageResponse(videoLessonPage,
+                videoLessonMapper.toListResponse(videoLessonPage.getContent()));
+    }
+
+    @Override
+    public PageResponse<VideoLessonResponse> getAllVideoLessonsAdmin(int pageNo, int pageSize, String sort, Long channelId, String keyword) {
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, SortUtil.createSort(sort));
+
+        GenericSpecificationBuilder<VideoLesson> builder = new GenericSpecificationBuilder<>();
+        builder.withJoinById("channel", channelId);
 
         if (StringUtils.hasText(keyword)) builder.with("title", ":", keyword);
 

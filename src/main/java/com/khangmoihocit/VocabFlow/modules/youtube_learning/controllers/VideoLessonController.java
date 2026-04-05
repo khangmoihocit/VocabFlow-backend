@@ -59,6 +59,19 @@ public class VideoLessonController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/find-all/auth/{channelId}")
+    ResponseEntity<?> findAllAdmin(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo,
+                              @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+                              @RequestParam(name = "sort", defaultValue = "id,asc") String sort,
+                              @RequestParam(name = "keyword", defaultValue = "") String keyword,
+                              @PathVariable Long channelId) {
+        PageResponse<VideoLessonResponse> videoLessonResponse =
+                videoLessonService.getAllVideoLessonsAdmin(pageNo, pageSize, sort, channelId, keyword);
+        ApiResponse<PageResponse<VideoLessonResponse>> response = ApiResponse.success(videoLessonResponse, "get all video lesson success");
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     ResponseEntity<?> deleteById(@PathVariable Long id) {
         videoLessonService.deleteVideoLesson(id);

@@ -9,6 +9,8 @@ public interface VideoLessonService {
 
     PageResponse<VideoLessonResponse> getAllVideoLessons(int pageNo, int pageSize, String sort, Long channelId, String keyword);
 
+    PageResponse<VideoLessonResponse> getAllVideoLessonsAdmin(int pageNo, int pageSize, String sort, Long channelId, String keyword);
+
     VideoLessonResponse getVideoLessonById(Long id);
 
     VideoLessonResponse updateVideoLesson(Long id, VideoLessonRequest request);
