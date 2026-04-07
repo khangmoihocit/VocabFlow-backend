@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class VideoSegmentServiceImpl implements VideoSegmentService {
     VideoSegmentMapper videoSegmentMapper;
 
     @Override
-    public void importSegmentsFromTool(Long videoId, List<VideoSegmentToolRequest> toolRequests) {
+    public void insertSegment(Long videoId, List<VideoSegmentToolRequest> toolRequests) {
         VideoLesson videoLesson = videoLessonRepository.findById(videoId)
                 .orElseThrow(()->new AppException(ErrorCode.VIDEO_LESSON_NOT_FOUND));
 
@@ -47,6 +48,30 @@ public class VideoSegmentServiceImpl implements VideoSegmentService {
                         .startTime(req.getStart())
                         .endTime(req.getEnd())
                         .englishText(req.getText())
+                        .vietnameseTranslation(req.getVietnameseTranslation())
+                        .ipa(req.getIpa())
+                        .build()
+                ).toList();
+
+        videoSegmentRepository.saveAll(segmentsToSave);
+    }
+
+    @Transactional
+    @Override
+    public void updateSegment(Long videoId, List<VideoSegmentToolRequest> toolRequests) {
+        VideoLesson videoLesson = videoLessonRepository.findById(videoId)
+                .orElseThrow(()->new AppException(ErrorCode.VIDEO_LESSON_NOT_FOUND));
+
+        videoSegmentRepository.deleteByVideoId(videoLesson.getId());
+        List<VideoSegment> segmentsToSave = toolRequests.stream()
+                .map(req -> VideoSegment.builder()
+                        .video(videoLesson)
+                        .segmentOrder(req.getId())
+                        .startTime(req.getStart())
+                        .endTime(req.getEnd())
+                        .englishText(req.getText())
+                        .vietnameseTranslation(req.getVietnameseTranslation())
+                        .ipa(req.getIpa())
                         .build()
                 ).toList();
 

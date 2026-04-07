@@ -17,5 +17,7 @@ public class VideoSegmentResponse {
     BigDecimal startTime;
     BigDecimal endTime;
     String englishText;
+    String vietnameseTranslation;
+    String ipa;
     UserAttemptResponse userAttempt;
 }

@@ -38,6 +38,9 @@ public class VideoSegment {
     @Column(name = "vietnamese_translation", columnDefinition = "TEXT")
     private String vietnameseTranslation;
 
+    @Column(name = "ipa", columnDefinition = "TEXT")
+    private String ipa;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

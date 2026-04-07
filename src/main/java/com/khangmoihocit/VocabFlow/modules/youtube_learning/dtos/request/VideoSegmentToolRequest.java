@@ -25,4 +25,7 @@ public class VideoSegmentToolRequest {
 
     @NotNull
     String text;
+
+    String vietnameseTranslation;
+    String ipa;
 }

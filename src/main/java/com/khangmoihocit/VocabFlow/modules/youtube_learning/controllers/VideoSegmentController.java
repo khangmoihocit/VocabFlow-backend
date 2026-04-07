@@ -4,6 +4,7 @@ import com.khangmoihocit.VocabFlow.core.dtos.ApiResponse;
 import com.khangmoihocit.VocabFlow.modules.youtube_learning.dtos.request.VideoSegmentToolRequest;
 import com.khangmoihocit.VocabFlow.modules.youtube_learning.dtos.response.VideoDetailResponse;
 import com.khangmoihocit.VocabFlow.modules.youtube_learning.services.VideoSegmentService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,8 +24,8 @@ public class VideoSegmentController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{videoId}/import")
     ResponseEntity<?> importFromTool(@PathVariable Long videoId,
-                                     @RequestBody List<VideoSegmentToolRequest> toolRequests){
-        videoSegmentService.importSegmentsFromTool(videoId, toolRequests);
+                                     @Valid @RequestBody List<VideoSegmentToolRequest> toolRequests){
+        videoSegmentService.insertSegment(videoId, toolRequests);
         return ResponseEntity.ok(
                 ApiResponse.success("import thành công các segment của video " + videoId + " !"));
     }
@@ -34,5 +35,14 @@ public class VideoSegmentController {
         VideoDetailResponse videoDetailResponse = videoSegmentService.getById(videoId);
         ApiResponse<VideoDetailResponse> response = ApiResponse.success(videoDetailResponse, "Tải bài học video thành công!");
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{videoId}/update")
+    ResponseEntity<?> updateSegment(@PathVariable Long videoId,
+                                    @Valid @RequestBody List<VideoSegmentToolRequest> toolRequests){
+        videoSegmentService.updateSegment(videoId, toolRequests);
+        return ResponseEntity.ok(
+                ApiResponse.success("cập nhật thành công các segment của video " + videoId + " !"));
     }
 }
