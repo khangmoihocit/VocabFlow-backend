@@ -55,6 +55,9 @@ public enum ErrorCode {
     LESSON_NOT_FOUND("LESSON_NOT_FOUND", "Bài học không tồn tại", HttpStatus.NOT_FOUND),
     QUIZ_NOT_FOUND("QUIZ_NOT_FOUND", "Bài kiểm tra không tồn tại", HttpStatus.NOT_FOUND),
 
+    // ===== LEARNING =====
+    CHANNEL_NOT_FOUND("CHANNEL_NOT_FOUND", "channel không tồn tại", HttpStatus.NOT_FOUND),
+    VIDEO_LESSON_NOT_FOUND("VIDEO_LESSON_NOT_FOUND", "video không tồn tại", HttpStatus.NOT_FOUND),
     // ===== SYSTEM =====
     DATABASE_ERROR("DATABASE_ERROR", "Lỗi cơ sở dữ liệu", HttpStatus.INTERNAL_SERVER_ERROR);
 

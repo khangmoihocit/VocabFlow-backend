@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
-@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class LookupRequest {
     @NotBlank(message = "từ/cụm từ tìm kiếm không được để trống")

@@ -57,7 +57,9 @@ public class SecurityConfig {
             "/oauth2/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/api/v1/youtube-channels/find-all",
+            "/api/v1/video-lessons/find-all/**"
     };
 
     @Bean
@@ -97,6 +99,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
+                "http://localhost:5174",
                 "https://vocab-flow-silk.vercel.app", // Cho phép Web React
                 "chrome-extension://*"         // Cho phép Chrome Extension
         ));
