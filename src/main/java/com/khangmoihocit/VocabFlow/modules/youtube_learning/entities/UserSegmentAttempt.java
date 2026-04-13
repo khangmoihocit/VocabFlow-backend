@@ -30,6 +30,9 @@ public class UserSegmentAttempt {
     @Column(name = "dictation_user_text", columnDefinition = "TEXT")
     private String dictationUserText;
 
+    @Column(name = "shadowing_user_text", columnDefinition = "TEXT")
+    private String shadowingUserText;
+
     @Column(name = "dictation_score")
     private Integer dictationScore = 0;
 

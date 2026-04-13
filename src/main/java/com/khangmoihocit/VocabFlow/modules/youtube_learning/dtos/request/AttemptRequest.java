@@ -16,4 +16,6 @@ public class AttemptRequest {
     @NotNull
     Long segmentId;
     String dictationUserText;
+    String shadowingRecognizedText;
+    Integer shadowingScore;
 }
