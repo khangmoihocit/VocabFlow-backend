@@ -545,11 +545,5 @@ Success response (200):
 
 ---
 
-## Ghi chú / bước tiếp theo
-- Tôi đã lấy chính xác các trường từ DTOs trong project (các file `*Request` và `*Response`). Nếu bạn muốn tôi sinh một collection Postman / cURL hoặc OpenAPI spec (YAML/JSON) từ những mô tả này, tôi có thể làm tiếp.
-- Nếu muốn đổi ngôn ngữ của tài liệu (EN), hoặc đặt prefix đầy đủ cho path (ví dụ `/api`), hãy cho biết.
-
----
-
 Tài liệu kết thúc.
 

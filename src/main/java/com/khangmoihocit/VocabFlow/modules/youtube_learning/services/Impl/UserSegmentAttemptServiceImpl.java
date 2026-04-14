@@ -40,6 +40,10 @@ public class UserSegmentAttemptServiceImpl implements UserSegmentAttemptService 
     @Override
     @Transactional
     public List<UserSegmentAttemptResponse> save(List<AttemptRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         UUID currentUserId = UserDetailUtil.get().getId();
         User user = userRepository.getReferenceById(currentUserId);
 
@@ -65,9 +69,6 @@ public class UserSegmentAttemptServiceImpl implements UserSegmentAttemptService 
                 continue;
             }
 
-            // Tính toán điểm Dictation
-            Integer score = calculateDictationScore(segment.getEnglishText(), request.getDictationUserText());
-
             // Upsert: Lấy bản ghi cũ hoặc tạo mới
             UserSegmentAttempt attempt = existingAttempts.getOrDefault(
                     request.getSegmentId(),
@@ -75,18 +76,27 @@ public class UserSegmentAttemptServiceImpl implements UserSegmentAttemptService 
                             .user(user)
                             .segment(segment)
                             .shadowingScore(0)
+                            .dictationScore(0)
                             .isMastered(false)
                             .build()
             );
 
             // Cập nhật thông tin mới
-            attempt.setDictationUserText(request.getDictationUserText());
-            attempt.setDictationScore(score);
-            attempt.setUpdatedAt(LocalDateTime.now());
+            if (request.getDictationUserText() != null) {
+                attempt.setDictationUserText(request.getDictationUserText());
+                Integer dictScore = calculateDictationScore(segment.getEnglishText(), request.getDictationUserText());
+                attempt.setDictationScore(dictScore);
+            }
 
-            // Nếu đạt 100% dictation và shadowing cũng cao thì có thể set Mastered
-            // attempt.setIsMastered(score == 100 && attempt.getShadowingScore() > 80);
+            if (request.getShadowingRecognizedText() != null) {
+                attempt.setShadowingScore(request.getShadowingScore());
+                attempt.setShadowingUserText(request.getShadowingRecognizedText());
+            }
 
+            int currentDictScore = attempt.getDictationScore() != null ? attempt.getDictationScore() : 0;
+            int currentShadScore = attempt.getShadowingScore() != null ? attempt.getShadowingScore() : 0;
+
+            attempt.setIsMastered(currentDictScore == 100 && currentShadScore >= 80);
             attemptsToSave.add(attempt);
         }
 

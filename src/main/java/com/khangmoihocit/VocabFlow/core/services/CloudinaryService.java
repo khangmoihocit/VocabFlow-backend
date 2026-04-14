@@ -16,13 +16,12 @@ public class CloudinaryService {
     private final Cloudinary cloudinary;
 
     public String uploadAvatar(MultipartFile file) throws IOException {
-        // Cấu hình upload: Gom ảnh vào folder "avatars" trên Cloudinary
+        // up ảnh vào folder "avatars" Cloudinary
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
-                "folder", "avatars", // Tên thư mục trên Cloudinary
+                "folder", "avatars",
                 "resource_type", "image"
         ));
 
-        // Trả về đường link ảnh bảo mật (https)
         return uploadResult.get("secure_url").toString();
     }
 }
