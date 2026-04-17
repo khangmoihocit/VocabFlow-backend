@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 public class UserAttemptResponse {
     String dictationUserText;
     Integer dictationScore;
+    String shadowingUserText;
     Integer shadowingScore;
     Boolean isMastered;
 }

@@ -110,6 +110,7 @@ public class VideoSegmentServiceImpl implements VideoSegmentService {
                 response.setUserAttempt(UserAttemptResponse.builder()
                         .dictationUserText(attempt.getDictationUserText())
                         .dictationScore(attempt.getDictationScore())
+                        .shadowingUserText(attempt.getShadowingUserText())
                         .shadowingScore(attempt.getShadowingScore())
                         .isMastered(attempt.getIsMastered())
                         .build());

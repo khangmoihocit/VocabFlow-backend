@@ -24,6 +24,7 @@ public class UserSegmentAttemptResponse {
     Long videoSegmentId;
     String dictationUserText;
     Integer dictationScore;
+    String shadowingUserText;
     Integer shadowingScore;
     Boolean isMastered;
     LocalDateTime updatedAt;
